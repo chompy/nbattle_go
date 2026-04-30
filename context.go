@@ -4,12 +4,11 @@ type Context struct {
 	idCounter  int
 	tick       int
 	objects    []object
-	eventLog   []*Event
 	eventHooks []EventHook
 }
 
 func New() *Context {
-	return &Context{0, 0, make([]object, 0), make([]*Event, 0), make([]EventHook, 0)}
+	return &Context{0, 0, make([]object, 0), make([]EventHook, 0)}
 }
 
 func (c *Context) newObject() objectBase {
@@ -28,6 +27,7 @@ func (c *Context) getObjectByID(ID int) object {
 
 func (c *Context) Tick() int {
 	c.tick++
+	c.EmitEvent(EventTypeTick, c.tick)
 	return c.tick
 }
 
@@ -41,14 +41,14 @@ func (c *Context) NewStatDef(min, max int) *StatDef {
 	return stafDef
 }
 
-func (c *Context) NewEffectDef(create func(*Combatant, *Combatant) Effect) *EffectDef {
+func (c *Context) NewEffectDef(create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), create}
 	c.objects = append(c.objects, effectDef)
 	return effectDef
 }
 
 func (c *Context) NewCombatant() *Combatant {
-	combatant := &Combatant{c.newObject(), make([]*Stat, 0), make(map[*EffectDef]Effect, 0)}
+	combatant := &Combatant{c.newObject(), make([]*Stat, 0), make([]*combatantEffect, 0)}
 	c.objects = append(c.objects, combatant)
 	c.EmitEvent(EventTypeCombatantNew, combatant.ID())
 	return combatant
@@ -84,19 +84,19 @@ func (c *Context) EmitEvent(eventType EventType, values ...any) {
 			values[i] = value.ID()
 		}
 	}
-	event := &Event{eventType, c.GetTick(), values}
-	c.eventLog = append(c.eventLog, event)
+	c.idCounter++
+	event := &Event{c.idCounter, eventType, c.GetTick(), values}
 	for _, hook := range c.eventHooks {
 		hook(event)
 	}
+	for _, combatant := range c.Combatants() {
+		combatant.HandleEffectEvent(event)
+	}
+
 }
 
 func (c *Context) HookEvents(hook EventHook) {
 	c.eventHooks = append(c.eventHooks, hook)
-}
-
-func (c *Context) GetEventLog() []*Event {
-	return c.eventLog
 }
 
 func (c *Context) HandleEvent(event *Event) error {
@@ -135,12 +135,12 @@ func (c *Context) HandleEvent(event *Event) error {
 		}
 		stat.Mod(source, event.GetInt(2))
 
-	case EventTypeCombatantEffectApply:
-		target, effectDef, source, err := c.getEffectApplyParams(event)
+	case EventTypeCombatantEffectAdd:
+		target, effectDef, source, err := c.getEffectAddParams(event)
 		if err != nil {
 			return err
 		}
-		target.ApplyEffect(effectDef, source)
+		target.AddEffect(effectDef, source)
 	case EventTypeCombatantEffectRemove:
 		target, effectDef, err := c.getEffectRemoveParams(event)
 		if err != nil {
@@ -148,6 +148,7 @@ func (c *Context) HandleEvent(event *Event) error {
 		}
 		target.RemoveEffect(effectDef)
 	}
+
 	return nil
 }
 
@@ -177,7 +178,7 @@ func (c *Context) getStatByID(id int) (*Stat, error) {
 	return stat, nil
 }
 
-func (c *Context) getEffectApplyParams(event *Event) (*Combatant, *EffectDef, *Combatant, error) {
+func (c *Context) getEffectAddParams(event *Event) (*Combatant, *EffectDef, *Combatant, error) {
 	targetObj := c.getObjectByID(event.GetInt(0))
 	effectDefObj := c.getObjectByID(event.GetInt(1))
 	sourceObj := c.getObjectByID(event.GetInt(2))

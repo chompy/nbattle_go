@@ -2,7 +2,7 @@ package nbattle
 
 type EffectDef struct {
 	objectBase
-	create func(target *Combatant, source *Combatant) Effect
+	new func() Effect
 }
 
 func (d *EffectDef) Type() objectType {
@@ -13,10 +13,15 @@ func (d *EffectDef) Serialize() []byte {
 	return nil
 }
 
+type EffectCtx struct {
+	Ctx    *Context
+	Def    *EffectDef
+	Source *Combatant
+	Target *Combatant
+}
+
 type Effect interface {
-	Source() *Combatant
-	Target() *Combatant
-	OnApply()
-	OnRemove()
-	OnEvent(event *Event)
+	OnAdd(ctx *EffectCtx)
+	OnRemove(ctx *EffectCtx)
+	OnEvent(ctx *EffectCtx, event *Event)
 }

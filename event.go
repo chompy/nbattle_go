@@ -10,14 +10,19 @@ const (
 	EventTypeStatMod                                // stat(int),source(int),mod(int)
 	EventTypeCombatantNew                           // combatant(int)
 	EventTypeCombatantStatAdd                       // combatant(int),stat(int),statDef(int)
-	EventTypeCombatantEffectApply                   // target(int),effectDef(int),source(int)
+	EventTypeCombatantEffectAdd                     // target(int),effectDef(int),source(int)
 	EventTypeCombatantEffectRemove                  // target(int),effectDef(int)
 )
 
 type Event struct {
+	id        int
 	eventType EventType
 	tick      int
 	values    []any
+}
+
+func (e *Event) ID() int {
+	return e.id
 }
 
 func (e *Event) Type() EventType {

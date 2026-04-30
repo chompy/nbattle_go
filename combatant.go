@@ -1,9 +1,16 @@
 package nbattle
 
+import "slices"
+
+type combatantEffect struct {
+	Effect    Effect
+	EffectCtx *EffectCtx
+}
+
 type Combatant struct {
 	objectBase
 	stats   []*Stat
-	effects map[*EffectDef]Effect
+	effects []*combatantEffect
 }
 
 func (d *Combatant) Type() objectType {
@@ -33,18 +40,28 @@ func (c *Combatant) Stat(def *StatDef) *Stat {
 	return stat
 }
 
-func (c *Combatant) ApplyEffect(effectDef *EffectDef, source *Combatant) Effect {
-	effect := effectDef.create(c, source)
-	c.effects[effectDef] = effect
-	effect.OnApply()
-	c.ctx.EmitEvent(EventTypeCombatantEffectApply, c.ID(), effectDef.ID(), source.ID())
-	return effect
+func (c *Combatant) AddEffect(effectDef *EffectDef, source *Combatant) {
+	effect := effectDef.new()
+	effectCtx := &EffectCtx{c.ctx, effectDef, source, c}
+	combatantEffect := &combatantEffect{effect, effectCtx}
+	c.effects = append(c.effects, combatantEffect)
+	effect.OnAdd(effectCtx)
+	c.ctx.EmitEvent(EventTypeCombatantEffectAdd, c.ID(), effectDef.ID(), source.ID())
 }
 
 func (c *Combatant) RemoveEffect(effectDef *EffectDef) {
-	if c.effects[effectDef] != nil {
-		c.effects[effectDef].OnRemove()
-		delete(c.effects, effectDef)
-		c.ctx.EmitEvent(EventTypeCombatantEffectRemove, c.ID(), effectDef.ID())
+	c.effects = slices.DeleteFunc(c.effects, func(e *combatantEffect) bool {
+		if e.EffectCtx.Def.ID() == effectDef.ID() {
+			e.Effect.OnRemove(e.EffectCtx)
+			return true
+		}
+		return false
+	})
+}
+
+func (c *Combatant) HandleEffectEvent(event *Event) error {
+	for _, effect := range c.effects {
+		effect.Effect.OnEvent(effect.EffectCtx, event)
 	}
+	return nil
 }
