@@ -21,8 +21,8 @@ func TestHandleEvent(t *testing.T) {
 	srcCtx.HookEvents(recCtx.HandleEvent)
 
 	cmbt := srcCtx.NewCombatant(1)
-	cmbt.Stat("hp").SetBase(30)
-	cmbt.Stat("max_hp").SetBase(30)
+	cmbt.GetStat("hp").SetBase(30)
+	cmbt.GetStat("max_hp").SetBase(30)
 
 	recCmbt, _ := recCtx.GetCombatantByID(cmbt.GetID())
 
@@ -30,12 +30,12 @@ func TestHandleEvent(t *testing.T) {
 		t.Fatal("receiving combatant id does not match source")
 	}
 
-	if cmbt.Stat("hp").GetValue() != recCmbt.Stat("hp").GetValue() {
+	if cmbt.GetStat("hp").GetValue() != recCmbt.GetStat("hp").GetValue() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 
-	cmbt.Stat("hp").AddBase(-5)
-	if cmbt.Stat("hp").GetValue() != recCmbt.Stat("hp").GetValue() {
+	cmbt.GetStat("hp").AddBase(-5)
+	if cmbt.GetStat("hp").GetValue() != recCmbt.GetStat("hp").GetValue() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 

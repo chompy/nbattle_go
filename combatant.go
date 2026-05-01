@@ -28,7 +28,7 @@ func (c *Combatant) Reset() {
 	}
 }
 
-func (c *Combatant) Stat(obj any) *Stat {
+func (c *Combatant) GetStat(obj any) *Stat {
 	def, ok := c.ctx.GetObject(obj).(*StatDef)
 	if !ok {
 		return nil
@@ -42,7 +42,7 @@ func (c *Combatant) Stat(obj any) *Stat {
 		}
 	}
 	stat := &Stat{c.ctx.newObject(), def, 0, nil}
-	//c.ctx.EmitEvent(EventTypeCombatantStatAdd, c.GetID(), stat.GetID(), def.GetID())
+	c.ctx.EmitEvent(&event.AddCombatantStat{CombatantID: c.GetID(), StatID: stat.GetID(), StatDefID: def.GetID()})
 	c.ctx.objects = append(c.ctx.objects, stat)
 	c.stats = append(c.stats, stat)
 	return stat
@@ -62,15 +62,14 @@ func (c *Combatant) AddEffect(obj any, sourceObj any) error {
 	combatantEffect := &CombatantEffect{effect, effectCtx}
 	c.effects = append(c.effects, combatantEffect)
 	effect.OnAdd(effectCtx)
-	/*sourceID := 0
+	sourceID := 0
 	if sourceObj != nil {
-		source, ok := c.ctx.GetObject(obj).(*Combatant)
-		if ok {
-			sourceID = source.GetID()
-			effectCtx.Source = source
+		if src, ok2 := c.ctx.GetObject(sourceObj).(*Combatant); ok2 {
+			sourceID = src.GetID()
+			effectCtx.Source = src
 		}
-	}*/
-	//c.ctx.EmitEvent(EventTypeCombatantEffectAdd, c.GetID(), effectDef.GetID(), sourceID)
+	}
+	c.ctx.EmitEvent(&event.AddCombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), SourceID: sourceID})
 	return nil
 }
 
@@ -86,6 +85,7 @@ func (c *Combatant) RemoveEffect(obj any) error {
 		}
 		return false
 	})
+	c.ctx.EmitEvent(&event.RemoveCombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID()})
 	return nil
 }
 

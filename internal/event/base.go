@@ -7,8 +7,9 @@ type Type uint8
 const (
 	TickEvent Type = iota
 	NewCombatantEvent
-	SetCombatantStatEvent
-	ModCombatantStatEvent
+	StatBaseEvent
+	StatModEvent
+	AddCombatantStatEvent
 	AddCombatantEffectEvent
 	RemoveCombatantEffectEvent
 )

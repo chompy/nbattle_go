@@ -1,5 +1,7 @@
 package nbattle
 
+import "github.com/chompy/nbattle_go/internal/event"
+
 type Stat struct {
 	BaseObject
 	def  *StatDef
@@ -17,7 +19,7 @@ func (s *Stat) GetBase() int {
 
 func (s *Stat) SetBase(value int) {
 	s.base = min(s.GetDef().GetMax(), max(s.GetDef().GetMin(), value))
-	//s.ctx.EmitEvent(EventTypeStatBase, s.GetID(), value)
+	s.ctx.EmitEvent(&event.StatBase{StatID: s.GetID(), Value: value})
 }
 
 func (s *Stat) AddBase(value int) {
@@ -36,7 +38,7 @@ func (s *Stat) Reset() {
 	s.mods = make(map[int]int)
 }
 
-func (s *Stat) Mod(source any, value int) {
+func (s *Stat) SetMod(source any, value int) {
 	sourceObj := s.ctx.GetObject(source)
 	if sourceObj == nil {
 		return
@@ -48,5 +50,5 @@ func (s *Stat) Mod(source any, value int) {
 	if value == 0 {
 		delete(s.mods, sourceObj.GetID())
 	}
-	//s.ctx.EmitEvent(EventTypeStatMod, s.GetID(), sourceObj.GetID(), value)
+	s.ctx.EmitEvent(&event.StatMod{StatID: s.GetID(), SourceID: sourceObj.GetID(), ModValue: value})
 }

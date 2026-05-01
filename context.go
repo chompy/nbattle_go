@@ -1,6 +1,8 @@
 package nbattle
 
-import "github.com/chompy/nbattle_go/internal/event"
+import (
+	"github.com/chompy/nbattle_go/internal/event"
+)
 
 type Context struct {
 	idCounter  int
@@ -129,55 +131,65 @@ func (c *Context) HookEvents(hook event.Hook) {
 }
 
 func (c *Context) HandleEvent(e event.Event) error {
-	switch e := e.(type) {
+	switch ev := e.(type) {
 	case *event.Tick:
-		for c.GetTick() < e.Tick {
+		for c.GetTick() < ev.Tick {
 			c.Tick()
 		}
 	case *event.NewCombatant:
-		c.NewCombatantWithID(e.ID, e.Team)
+		c.NewCombatantWithID(ev.ID, ev.Team)
 
-		/*
-			case *event:
-				combatant, statDef, err := c.getCombatantAndStatDef(event)
-				if err != nil {
-					return err
-				}
-				stat := combatant.Stat(statDef)
-				stat.id = event.GetInt(1)
-				return nil
+	case *event.AddCombatantStat:
+		combatant, err := c.GetCombatantByID(ev.CombatantID)
+		if err != nil {
+			return err
+		}
+		stat := combatant.GetStat(ev.StatDefID)
+		stat.id = ev.StatID
 
-			case EventTypeStatBase:
-				stat, err := c.getStatByID(event.GetInt(0))
-				if err != nil {
-					return err
-				}
-				stat.SetBase(event.GetInt(1))
-			case EventTypeStatMod:
-				stat, err := c.getStatByID(event.GetInt(0))
-				if err != nil {
-					return err
-				}
-				source := c.getObjectByID(event.GetInt(1))
-				if source == nil {
-					return ErrObjectNotFound
-				}
-				stat.Mod(source, event.GetInt(2))
+	case *event.StatBase:
+		statObj := c.GetObjectByID(ev.StatID)
+		if statObj == nil {
+			return ErrObjectNotFound
+		}
+		stat, ok := statObj.(*Stat)
+		if !ok {
+			return ErrUnexpectedObjectType
+		}
+		stat.SetBase(ev.Value)
+		return nil
 
-			case EventTypeCombatantEffectAdd:
-				target, effectDef, source, err := c.getEffectAddParams(event)
-				if err != nil {
-					return err
-				}
-				target.AddEffect(effectDef, source)
-			case EventTypeCombatantEffectRemove:
-				target, effectDef, err := c.getEffectRemoveParams(event)
-				if err != nil {
-					return err
-				}
-				target.RemoveEffect(effectDef)
-		*/
+	case *event.StatMod:
+		statObj := c.GetObjectByID(ev.StatID)
+		if statObj == nil {
+			return ErrObjectNotFound
+		}
+		stat, ok := statObj.(*Stat)
+		if !ok {
+			return ErrUnexpectedObjectType
+		}
+		stat.SetMod(ev.SourceID, ev.ModValue)
+
+	case *event.AddCombatantEffect:
+		target, err := c.GetCombatantByID(ev.TargetID)
+		if err != nil {
+			return err
+		}
+		// source optional
+		sourceObj := c.GetObjectByID(ev.SourceID)
+		if sourceObj != nil {
+			// allow nil if source not provided
+			target.AddEffect(ev.EffectDefID, sourceObj)
+		} else {
+			target.AddEffect(ev.EffectDefID, nil)
+		}
+
+	case *event.RemoveCombatantEffect:
+		target, err := c.GetCombatantByID(ev.TargetID)
+		if err != nil {
+			return err
+		}
+		target.RemoveEffect(ev.EffectDefID)
 	}
-
 	return nil
 }
