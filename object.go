@@ -1,26 +1,14 @@
 package nbattle
 
-type objectType int
-
-const (
-	objectTypeStatDef objectType = iota
-	objectTypeStat
-	objectTypeCombatant
-	objectTypeEffectDef
-	objectTypeEffect
-)
-
-type object interface {
-	ID() int
-	Type() objectType
-	Serialize() []byte
+type Object interface {
+	GetID() int
 }
 
-type objectBase struct {
+type BaseObject struct {
 	id  int
 	ctx *Context
 }
 
-func (o *objectBase) ID() int {
+func (o *BaseObject) GetID() int {
 	return o.id
 }

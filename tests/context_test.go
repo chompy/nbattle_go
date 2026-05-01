@@ -3,37 +3,39 @@ package tests
 import (
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go"
 )
+
+func initCtx() *nbattle.Context {
+	ctx := nbattle.New()
+	ctx.NewStatDef("max_hp", 0, 99)
+	ctx.NewStatDef("hp", 0, 99)
+	return ctx
+}
 
 func TestHandleEvent(t *testing.T) {
 
-	srcCtx := nbattle.New()
-	recCtx := nbattle.New()
+	srcCtx := initCtx()
+	recCtx := initCtx()
 
 	srcCtx.HookEvents(recCtx.HandleEvent)
 
-	statDefHP := srcCtx.NewStatDef(0, 99)
-	statDefMaxHP := srcCtx.NewStatDef(0, 99)
-	recCtx.NewStatDef(0, 99)
-	recCtx.NewStatDef(0, 99)
-
 	cmbt := srcCtx.NewCombatant()
-	cmbt.Stat(statDefHP).SetBase(30)
-	cmbt.Stat(statDefMaxHP).SetBase(30)
+	cmbt.Stat("hp").SetBase(30)
+	cmbt.Stat("max_hp").SetBase(30)
 
-	recCmbt, _ := recCtx.GetCombatantByID(cmbt.ID())
+	recCmbt, _ := recCtx.GetCombatantByID(cmbt.GetID())
 
-	if cmbt.ID() != recCmbt.ID() {
+	if cmbt.GetID() != recCmbt.GetID() {
 		t.Fatal("receiving combatant id does not match source")
 	}
 
-	if cmbt.Stat(statDefHP).Value() != recCmbt.Stat(statDefHP).Value() {
+	if cmbt.Stat("hp").Value() != recCmbt.Stat("hp").Value() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 
-	cmbt.Stat(statDefHP).AddBase(-5)
-	if cmbt.Stat(statDefHP).Value() != recCmbt.Stat(statDefHP).Value() {
+	cmbt.Stat("hp").AddBase(-5)
+	if cmbt.Stat("hp").Value() != recCmbt.Stat("hp").Value() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 

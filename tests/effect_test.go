@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go"
 )
 
 type TestEffect struct {
@@ -28,8 +28,8 @@ func TestCombatantEffect(t *testing.T) {
 
 	ctx := nbattle.New()
 
-	statDefHP := ctx.NewStatDef(0, 99)
-	effectDefTest := ctx.NewEffectDef(func() nbattle.Effect {
+	statDefHP := ctx.NewStatDef("hp", 0, 99)
+	effectDefTest := ctx.NewEffectDef("test", func() nbattle.Effect {
 		return &TestEffect{hpStat: statDefHP}
 	})
 

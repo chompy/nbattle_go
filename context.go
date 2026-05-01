@@ -1,33 +1,48 @@
 package nbattle
 
+import "github.com/chompy/nbattle_go/internal/event"
+
 type Context struct {
 	idCounter  int
 	tick       int
-	objects    []object
-	eventHooks []EventHook
+	objects    []Object
+	eventHooks []event.Hook
 }
 
 func New() *Context {
-	return &Context{0, 0, make([]object, 0), make([]EventHook, 0)}
+	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0)}
 }
 
-func (c *Context) newObject() objectBase {
+func (c *Context) newObject() BaseObject {
 	c.idCounter++
-	return objectBase{c.idCounter, c}
+	return BaseObject{c.idCounter, c}
 }
 
-func (c *Context) getObjectByID(ID int) object {
+func (c *Context) GetObjectByID(ID int) Object {
 	for _, obj := range c.objects {
-		if obj.ID() == ID {
+		if obj.GetID() == ID {
 			return obj
 		}
 	}
 	return nil
 }
 
+func (c *Context) GetObject(obj any) Object {
+	switch obj := obj.(type) {
+	case Object:
+		return obj
+	case int:
+		return c.GetObjectByID(obj)
+	case string:
+		statDef, _ := c.GetStatDefByName(obj)
+		return statDef
+	}
+	return nil
+}
+
 func (c *Context) Tick() int {
 	c.tick++
-	c.EmitEvent(EventTypeTick, c.tick)
+	c.EmitEvent(&event.Tick{Tick: c.tick})
 	return c.tick
 }
 
@@ -35,23 +50,45 @@ func (c *Context) GetTick() int {
 	return c.tick
 }
 
-func (c *Context) NewStatDef(min, max int) *StatDef {
-	stafDef := &StatDef{c.newObject(), min, max}
+func (c *Context) NewStatDef(name string, min, max int) *StatDef {
+	stafDef := &StatDef{c.newObject(), name, min, max}
 	c.objects = append(c.objects, stafDef)
 	return stafDef
 }
 
-func (c *Context) NewEffectDef(create func() Effect) *EffectDef {
-	effectDef := &EffectDef{c.newObject(), create}
+func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
+	effectDef := &EffectDef{c.newObject(), name, create}
 	c.objects = append(c.objects, effectDef)
 	return effectDef
 }
 
-func (c *Context) NewCombatant() *Combatant {
-	combatant := &Combatant{c.newObject(), make([]*Stat, 0), make([]*combatantEffect, 0)}
+func (c *Context) NewCombatant(team int) *Combatant {
+	combatant := &Combatant{c.newObject(), team, make([]*Stat, 0), make([]*CombatantEffect, 0)}
 	c.objects = append(c.objects, combatant)
-	c.EmitEvent(EventTypeCombatantNew, combatant.ID())
+	c.EmitEvent(&event.NewCombatant{ID: combatant.GetID(), Team: team})
 	return combatant
+}
+
+func (c *Context) NewCombatantWithID(ID int, team int) *Combatant {
+	combatant, err := c.GetCombatantByID(ID)
+	if err == ErrObjectNotFound {
+		combatant = c.NewCombatant(team)
+		combatant.id = ID
+	}
+	return combatant
+}
+
+func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
+	for _, def := range c.objects {
+		statDef, ok := def.(*StatDef)
+		if !ok {
+			continue
+		}
+		if statDef.GetName() == name {
+			return statDef, nil
+		}
+	}
+	return nil, ErrObjectNotFound
 }
 
 func (c *Context) Combatants() []*Combatant {
@@ -66,7 +103,7 @@ func (c *Context) Combatants() []*Combatant {
 }
 
 func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
-	combatantObj := c.getObjectByID(ID)
+	combatantObj := c.GetObjectByID(ID)
 	if combatantObj == nil {
 		return nil, ErrObjectNotFound
 	}
@@ -77,15 +114,7 @@ func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
 	return combatant, nil
 }
 
-func (c *Context) EmitEvent(eventType EventType, values ...any) {
-	for i := range values {
-		switch value := values[i].(type) {
-		case object:
-			values[i] = value.ID()
-		}
-	}
-	c.idCounter++
-	event := &Event{c.idCounter, eventType, c.GetTick(), values}
+func (c *Context) EmitEvent(event event.Event) {
 	for _, hook := range c.eventHooks {
 		hook(event)
 	}
@@ -95,115 +124,60 @@ func (c *Context) EmitEvent(eventType EventType, values ...any) {
 
 }
 
-func (c *Context) HookEvents(hook EventHook) {
+func (c *Context) HookEvents(hook event.Hook) {
 	c.eventHooks = append(c.eventHooks, hook)
 }
 
-func (c *Context) HandleEvent(event *Event) error {
-	switch event.Type() {
-	case EventTypeTick:
-		c.Tick()
+func (c *Context) HandleEvent(e event.Event) error {
+	switch e := e.(type) {
+	case *event.Tick:
+		for c.GetTick() < e.Tick {
+			c.Tick()
+		}
+	case *event.NewCombatant:
+		c.NewCombatantWithID(e.ID, e.Team)
 
-	case EventTypeCombatantNew:
-		combatantID := event.GetInt(0)
-		combatant := c.NewCombatant()
-		combatant.id = combatantID
+		/*
+			case *event:
+				combatant, statDef, err := c.getCombatantAndStatDef(event)
+				if err != nil {
+					return err
+				}
+				stat := combatant.Stat(statDef)
+				stat.id = event.GetInt(1)
+				return nil
 
-	case EventTypeCombatantStatAdd:
-		combatant, statDef, err := c.getCombatantAndStatDef(event)
-		if err != nil {
-			return err
-		}
-		stat := combatant.Stat(statDef)
-		stat.id = event.GetInt(1)
-		return nil
+			case EventTypeStatBase:
+				stat, err := c.getStatByID(event.GetInt(0))
+				if err != nil {
+					return err
+				}
+				stat.SetBase(event.GetInt(1))
+			case EventTypeStatMod:
+				stat, err := c.getStatByID(event.GetInt(0))
+				if err != nil {
+					return err
+				}
+				source := c.getObjectByID(event.GetInt(1))
+				if source == nil {
+					return ErrObjectNotFound
+				}
+				stat.Mod(source, event.GetInt(2))
 
-	case EventTypeStatBase:
-		stat, err := c.getStatByID(event.GetInt(0))
-		if err != nil {
-			return err
-		}
-		stat.SetBase(event.GetInt(1))
-	case EventTypeStatMod:
-		stat, err := c.getStatByID(event.GetInt(0))
-		if err != nil {
-			return err
-		}
-		source := c.getObjectByID(event.GetInt(1))
-		if source == nil {
-			return ErrObjectNotFound
-		}
-		stat.Mod(source, event.GetInt(2))
-
-	case EventTypeCombatantEffectAdd:
-		target, effectDef, source, err := c.getEffectAddParams(event)
-		if err != nil {
-			return err
-		}
-		target.AddEffect(effectDef, source)
-	case EventTypeCombatantEffectRemove:
-		target, effectDef, err := c.getEffectRemoveParams(event)
-		if err != nil {
-			return err
-		}
-		target.RemoveEffect(effectDef)
+			case EventTypeCombatantEffectAdd:
+				target, effectDef, source, err := c.getEffectAddParams(event)
+				if err != nil {
+					return err
+				}
+				target.AddEffect(effectDef, source)
+			case EventTypeCombatantEffectRemove:
+				target, effectDef, err := c.getEffectRemoveParams(event)
+				if err != nil {
+					return err
+				}
+				target.RemoveEffect(effectDef)
+		*/
 	}
 
 	return nil
-}
-
-func (c *Context) getCombatantAndStatDef(event *Event) (*Combatant, *StatDef, error) {
-	combatantObj := c.getObjectByID(event.GetInt(0))
-	statDefObj := c.getObjectByID(event.GetInt(2))
-	if combatantObj == nil || statDefObj == nil {
-		return nil, nil, ErrObjectNotFound
-	}
-	combatant, ok1 := combatantObj.(*Combatant)
-	statDef, ok2 := statDefObj.(*StatDef)
-	if !ok1 || !ok2 {
-		return nil, nil, ErrUnexpectedObjectType
-	}
-	return combatant, statDef, nil
-}
-
-func (c *Context) getStatByID(id int) (*Stat, error) {
-	obj := c.getObjectByID(id)
-	if obj == nil {
-		return nil, ErrObjectNotFound
-	}
-	stat, ok := obj.(*Stat)
-	if !ok {
-		return nil, ErrUnexpectedObjectType
-	}
-	return stat, nil
-}
-
-func (c *Context) getEffectAddParams(event *Event) (*Combatant, *EffectDef, *Combatant, error) {
-	targetObj := c.getObjectByID(event.GetInt(0))
-	effectDefObj := c.getObjectByID(event.GetInt(1))
-	sourceObj := c.getObjectByID(event.GetInt(2))
-	if targetObj == nil || effectDefObj == nil || sourceObj == nil {
-		return nil, nil, nil, ErrObjectNotFound
-	}
-	target, ok1 := targetObj.(*Combatant)
-	effectDef, ok2 := effectDefObj.(*EffectDef)
-	source, ok3 := sourceObj.(*Combatant)
-	if !ok1 || !ok2 || !ok3 {
-		return nil, nil, nil, ErrUnexpectedObjectType
-	}
-	return target, effectDef, source, nil
-}
-
-func (c *Context) getEffectRemoveParams(event *Event) (*Combatant, *EffectDef, error) {
-	targetObj := c.getObjectByID(event.GetInt(0))
-	effectDefObj := c.getObjectByID(event.GetInt(1))
-	if targetObj == nil || effectDefObj == nil {
-		return nil, nil, ErrObjectNotFound
-	}
-	target, ok1 := targetObj.(*Combatant)
-	effectDef, ok2 := effectDefObj.(*EffectDef)
-	if !ok1 || !ok2 {
-		return nil, nil, ErrUnexpectedObjectType
-	}
-	return target, effectDef, nil
 }

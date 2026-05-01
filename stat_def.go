@@ -1,23 +1,20 @@
 package nbattle
 
 type StatDef struct {
-	objectBase
-	min int
-	max int
+	BaseObject
+	name string
+	min  int
+	max  int
 }
 
-func (d *StatDef) Type() objectType {
-	return objectTypeStatDef
+func (d *StatDef) GetName() string {
+	return d.name
 }
 
-func (d *StatDef) Serialize() []byte {
-	return nil
-}
-
-func (d *StatDef) Min() int {
+func (d *StatDef) GetMin() int {
 	return d.min
 }
 
-func (d *StatDef) Max() int {
+func (d *StatDef) GetMax() int {
 	return d.max
 }
