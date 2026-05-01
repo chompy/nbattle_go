@@ -3,7 +3,7 @@ package lua
 import (
 	"log"
 
-	nbattle "github.com/chompy/nbattle_go/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go"
 )
 
 func ContextToLua(ctx *nbattle.Context) map[string]any {
@@ -21,25 +21,25 @@ func ContextToLua(ctx *nbattle.Context) map[string]any {
 
 func StatDefToLua(stat *nbattle.StatDef) map[string]any {
 	return map[string]any{
-		"name": stat.Name(),
-		"min":  stat.Min(),
-		"max":  stat.Max(),
+		"name": stat.GetName(),
+		"min":  stat.GetMin(),
+		"max":  stat.GetMax(),
 	}
 }
 
 func StatToLua(stat *nbattle.Stat) map[string]any {
 	return map[string]any{
-		"def":     StatDefToLua(stat.Def()),
-		"getBase": stat.Base,
+		"def":     StatDefToLua(stat.GetDef()),
+		"getBase": stat.GetBase,
 		"setBase": stat.SetBase,
-		"get":     stat.Value,
+		"get":     stat.GetValue,
 	}
 }
 
 func CombatantToLua(combatant *nbattle.Combatant) map[string]any {
 	stats := make(map[string]any)
 	for _, stat := range combatant.Stats() {
-		stats[stat.Def().Name()] = StatToLua(stat)
+		stats[stat.GetDef().GetName()] = StatToLua(stat)
 	}
 	return map[string]any{
 		"id":    combatant.GetID(),

@@ -1,7 +1,8 @@
 package lua
 
 import (
-	nbattle "github.com/chompy/nbattle_go/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go"
+	"github.com/chompy/nbattle_go/internal/event"
 	luago "github.com/rosbit/luago"
 )
 
@@ -22,7 +23,7 @@ func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
 
 }
 
-func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event *nbattle.Event) {
+func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event *event.Event) {
 
 }
 
