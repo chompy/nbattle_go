@@ -61,7 +61,6 @@ func (c *Combatant) AddEffect(effectDefObj any, sourceObj any) error {
 	effectCtx := &EffectCtx{c.ctx, effectDef, nil, c}
 	combatantEffect := &CombatantEffect{effect, effectCtx}
 	c.effects = append(c.effects, combatantEffect)
-	effect.OnAdd(effectCtx)
 	sourceID := 0
 	if sourceObj != nil {
 		if src, ok2 := c.ctx.GetObject(sourceObj).(*Combatant); ok2 {
@@ -69,6 +68,9 @@ func (c *Combatant) AddEffect(effectDefObj any, sourceObj any) error {
 			effectCtx.Source = src
 		}
 	}
+	c.ctx.addEffectToStack(effect)
+	effect.OnAdd(effectCtx)
+	c.ctx.removeEffectFromStack(effect)
 	c.ctx.EmitEvent(&event.AddCombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), SourceID: sourceID})
 	return nil
 }
@@ -80,7 +82,9 @@ func (c *Combatant) RemoveEffect(effectDefObj any) error {
 	}
 	c.effects = slices.DeleteFunc(c.effects, func(e *CombatantEffect) bool {
 		if e.EffectCtx.Def.GetID() == effectDef.GetID() {
+			c.ctx.addEffectToStack(e.Effect)
 			e.Effect.OnRemove(e.EffectCtx)
+			c.ctx.removeEffectFromStack(e.Effect)
 			return true
 		}
 		return false
@@ -91,7 +95,11 @@ func (c *Combatant) RemoveEffect(effectDefObj any) error {
 
 func (c *Combatant) HandleEffectEvent(event event.Event) error {
 	for _, effect := range c.effects {
-		effect.Effect.OnEvent(effect.EffectCtx, event)
+		if c.ctx.isEffectInStack(effect.Effect) {
+			c.ctx.addEffectToStack(effect.Effect)
+			effect.Effect.OnEvent(effect.EffectCtx, event)
+			c.ctx.removeEffectFromStack(effect.Effect)
+		}
 	}
 	return nil
 }

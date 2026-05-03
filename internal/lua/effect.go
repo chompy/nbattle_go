@@ -12,11 +12,7 @@ type LuaEffect struct {
 	luaCtx *luago.LuaContext
 }
 
-func loadLuaScript(ctx *nbattle.Context, script io.Reader) (*luago.LuaContext, error) {
-	scriptBytes, err := io.ReadAll(script)
-	if err != nil {
-		return nil, err
-	}
+func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext, error) {
 	luaCtx, err := luago.NewContext()
 	if err != nil {
 		return nil, err
@@ -28,7 +24,11 @@ func loadLuaScript(ctx *nbattle.Context, script io.Reader) (*luago.LuaContext, e
 }
 
 func NewLuaEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, error) {
-	luaCtx, err := loadLuaScript(ctx, script)
+	scriptBytes, err := io.ReadAll(script)
+	if err != nil {
+		return nil, err
+	}
+	luaCtx, err := loadLuaScript(ctx, scriptBytes)
 	nameIf, err := luaCtx.CallFunc("Name")
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func NewLuaEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, e
 	}
 
 	return ctx.NewEffectDef(name, func() nbattle.Effect {
-		luaCtx, err := loadLuaScript(ctx, script)
+		luaCtx, err := loadLuaScript(ctx, scriptBytes)
 		if err != nil {
 			return nil
 		}
@@ -75,5 +75,12 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
 		CombatantToLua(ctx.Ctx, ctx.Source),
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnEvent")
+	}
+}
+
+func EffectContextToLua(ctx *nbattle.EffectCtx) map[string]any {
+	return map[string]any{
+		"source": CombatantToLua(ctx.Ctx, ctx.Source),
+		"target": CombatantToLua(ctx.Ctx, ctx.Target),
 	}
 }

@@ -13,14 +13,12 @@ func CombatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 			"error": nbattle.ErrNilObject,
 		}
 	}
-	stats := make(map[string]any)
-	for _, stat := range combatant.GetStats() {
-		stats[stat.GetDef().GetName()] = StatToLua(ctx, stat)
-	}
 	return map[string]any{
 		"id":   combatant.GetID(),
 		"type": combatant.GetType(),
-		"stat": stats,
+		"getStat": func(statDefName string) map[string]any {
+			return StatToLua(ctx, combatant.GetStat(statDefName))
+		},
 		"addEffect": func(name string, sourceObj any) {
 			sourceID := 0
 			source, ok := sourceObj.(map[string]any)

@@ -5,14 +5,15 @@ import (
 )
 
 type Context struct {
-	idCounter  int
-	tick       int
-	objects    []Object
-	eventHooks []event.Hook
+	idCounter   int
+	tick        int
+	objects     []Object
+	eventHooks  []event.Hook
+	effectStack []Effect
 }
 
 func New() *Context {
-	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0)}
+	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0), make([]Effect, 0)}
 }
 
 func (c *Context) newObject() BaseObject {
@@ -62,6 +63,17 @@ func (c *Context) NewStatDef(name string, min, max int) *StatDef {
 	stafDef := &StatDef{c.newObject(), name, min, max}
 	c.objects = append(c.objects, stafDef)
 	return stafDef
+}
+
+func (c *Context) GetStatDefs() []*StatDef {
+	out := make([]*StatDef, 0)
+	for _, object := range c.objects {
+		statDef, ok := object.(*StatDef)
+		if ok {
+			out = append(out, statDef)
+		}
+	}
+	return out
 }
 
 func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {

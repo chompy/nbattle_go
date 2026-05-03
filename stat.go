@@ -22,8 +22,9 @@ func (s *Stat) GetBase() int {
 }
 
 func (s *Stat) SetBase(value int) {
-	s.base = min(s.GetDef().GetMax(), max(s.GetDef().GetMin(), value))
-	s.ctx.EmitEvent(&event.StatBase{StatID: s.GetID(), Value: value})
+	evt := &event.StatBase{StatID: s.GetID(), Value: value}
+	s.ctx.EmitEvent(evt)
+	s.base = min(s.GetDef().GetMax(), max(s.GetDef().GetMin(), evt.Value))
 }
 
 func (s *Stat) AddBase(value int) {
@@ -47,12 +48,13 @@ func (s *Stat) SetMod(source any, value int) {
 	if sourceObj == nil {
 		return
 	}
+	evt := &event.StatMod{StatID: s.GetID(), SourceID: sourceObj.GetID(), ModValue: value}
+	s.ctx.EmitEvent(evt)
 	if s.mods == nil {
 		s.mods = make(map[int]int)
 	}
-	s.mods[sourceObj.GetID()] = value
-	if value == 0 {
+	s.mods[sourceObj.GetID()] = evt.ModValue
+	if evt.ModValue == 0 {
 		delete(s.mods, sourceObj.GetID())
 	}
-	s.ctx.EmitEvent(&event.StatMod{StatID: s.GetID(), SourceID: sourceObj.GetID(), ModValue: value})
 }
