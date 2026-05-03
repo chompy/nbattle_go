@@ -9,6 +9,10 @@ type Stat struct {
 	mods map[int]int
 }
 
+func (s *Stat) GetType() ObjectType {
+	return ObjectTypeStat
+}
+
 func (s *Stat) GetDef() *StatDef {
 	return s.def
 }

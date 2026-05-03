@@ -4,12 +4,16 @@ import "github.com/chompy/nbattle_go/internal/event"
 
 type EffectDef struct {
 	BaseObject
-	Name string
+	name string
 	new  func() Effect
 }
 
-func (d *EffectDef) Serialize() []byte {
-	return nil
+func (d *EffectDef) GetType() ObjectType {
+	return ObjectTypeEffectDef
+}
+
+func (d *EffectDef) GetName() string {
+	return d.name
 }
 
 type EffectCtx struct {

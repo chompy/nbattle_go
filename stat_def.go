@@ -7,6 +7,10 @@ type StatDef struct {
 	max  int
 }
 
+func (s *StatDef) GetType() ObjectType {
+	return ObjectTypeStatDef
+}
+
 func (d *StatDef) GetName() string {
 	return d.name
 }

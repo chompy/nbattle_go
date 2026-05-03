@@ -37,7 +37,13 @@ func (c *Context) GetObject(obj any) Object {
 		return c.GetObjectByID(obj)
 	case string:
 		statDef, _ := c.GetStatDefByName(obj)
-		return statDef
+		if statDef != nil {
+			return statDef
+		}
+		effectDef, _ := c.GetEffectDefByName(obj)
+		if effectDef != nil {
+			return effectDef
+		}
 	}
 	return nil
 }
@@ -58,10 +64,72 @@ func (c *Context) NewStatDef(name string, min, max int) *StatDef {
 	return stafDef
 }
 
+func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {
+	statDefObj := c.GetObjectByID(ID)
+	if statDefObj == nil {
+		return nil, ErrObjectNotFound
+	}
+	statDef, ok := statDefObj.(*StatDef)
+	if !ok {
+		return nil, ErrUnexpectedObjectType
+	}
+	return statDef, nil
+}
+
+func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
+	for _, def := range c.objects {
+		statDef, ok := def.(*StatDef)
+		if !ok {
+			continue
+		}
+		if statDef.GetName() == name {
+			return statDef, nil
+		}
+	}
+	return nil, ErrObjectNotFound
+}
+
+func (c *Context) GetStatByID(ID int) (*Stat, error) {
+	statObj := c.GetObjectByID(ID)
+	if statObj == nil {
+		return nil, ErrObjectNotFound
+	}
+	stat, ok := statObj.(*Stat)
+	if !ok {
+		return nil, ErrUnexpectedObjectType
+	}
+	return stat, nil
+}
+
 func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), name, create}
 	c.objects = append(c.objects, effectDef)
 	return effectDef
+}
+
+func (c *Context) GetEffectDefByID(ID int) (*EffectDef, error) {
+	effectDefObj := c.GetObjectByID(ID)
+	if effectDefObj == nil {
+		return nil, ErrObjectNotFound
+	}
+	effectDef, ok := effectDefObj.(*EffectDef)
+	if !ok {
+		return nil, ErrUnexpectedObjectType
+	}
+	return effectDef, nil
+}
+
+func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
+	for _, def := range c.objects {
+		effectDef, ok := def.(*EffectDef)
+		if !ok {
+			continue
+		}
+		if effectDef.GetName() == name {
+			return effectDef, nil
+		}
+	}
+	return nil, ErrObjectNotFound
 }
 
 func (c *Context) NewCombatant(team int) *Combatant {
@@ -80,20 +148,7 @@ func (c *Context) NewCombatantWithID(ID int, team int) *Combatant {
 	return combatant
 }
 
-func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
-	for _, def := range c.objects {
-		statDef, ok := def.(*StatDef)
-		if !ok {
-			continue
-		}
-		if statDef.GetName() == name {
-			return statDef, nil
-		}
-	}
-	return nil, ErrObjectNotFound
-}
-
-func (c *Context) Combatants() []*Combatant {
+func (c *Context) GetCombatants() []*Combatant {
 	out := make([]*Combatant, 0)
 	for _, object := range c.objects {
 		combatant, ok := object.(*Combatant)
@@ -116,11 +171,23 @@ func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
 	return combatant, nil
 }
 
+func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
+	combatants := c.GetCombatants()
+	for _, combatant := range combatants {
+		for _, combatantStat := range combatant.GetStats() {
+			if combatantStat.GetID() == stat.GetID() {
+				return combatant, nil
+			}
+		}
+	}
+	return nil, ErrObjectNotFound
+}
+
 func (c *Context) EmitEvent(event event.Event) {
 	for _, hook := range c.eventHooks {
 		hook(event)
 	}
-	for _, combatant := range c.Combatants() {
+	for _, combatant := range c.GetCombatants() {
 		combatant.HandleEffectEvent(event)
 	}
 

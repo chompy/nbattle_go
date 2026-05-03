@@ -18,8 +18,8 @@ type Combatant struct {
 	effects []*CombatantEffect
 }
 
-func (d *Combatant) Serialize() []byte {
-	return nil
+func (c *Combatant) GetType() ObjectType {
+	return ObjectTypeCombatant
 }
 
 func (c *Combatant) Reset() {
@@ -48,12 +48,12 @@ func (c *Combatant) GetStat(obj any) *Stat {
 	return stat
 }
 
-func (c *Combatant) Stats() []*Stat {
+func (c *Combatant) GetStats() []*Stat {
 	return c.stats
 }
 
-func (c *Combatant) AddEffect(obj any, sourceObj any) error {
-	effectDef, ok := c.ctx.GetObject(obj).(*EffectDef)
+func (c *Combatant) AddEffect(effectDefObj any, sourceObj any) error {
+	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
 	if !ok {
 		return ErrObjectNotFound
 	}
@@ -73,8 +73,8 @@ func (c *Combatant) AddEffect(obj any, sourceObj any) error {
 	return nil
 }
 
-func (c *Combatant) RemoveEffect(obj any) error {
-	effectDef, ok := c.ctx.GetObject(obj).(*EffectDef)
+func (c *Combatant) RemoveEffect(effectDefObj any) error {
+	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
 	if !ok {
 		return ErrObjectNotFound
 	}
