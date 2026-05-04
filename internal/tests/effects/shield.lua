@@ -1,5 +1,5 @@
 function Name()
-    return "defend"
+    return "shield"
 end
 
 function OnAdd(target, source)
@@ -11,10 +11,7 @@ end
 function OnEvent(event, target, source)
     if (event.type == STAT_BASE) then
         if (event.stat.getCombatant().id == target.id) then
-            local diff = target.getStat("hp").get() - event.value
-            if diff > 0 then
-                event.setValue(target.getStat("hp").get() - (diff / 2))
-            end
+            event.setValue(event.value * 2)
         end
     end
 end

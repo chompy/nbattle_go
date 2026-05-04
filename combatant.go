@@ -95,7 +95,7 @@ func (c *Combatant) RemoveEffect(effectDefObj any) error {
 
 func (c *Combatant) HandleEffectEvent(event event.Event) error {
 	for _, effect := range c.effects {
-		if c.ctx.isEffectInStack(effect.Effect) {
+		if !c.ctx.isEffectInStack(effect.Effect) {
 			c.ctx.addEffectToStack(effect.Effect)
 			effect.Effect.OnEvent(effect.EffectCtx, event)
 			c.ctx.removeEffectFromStack(effect.Effect)

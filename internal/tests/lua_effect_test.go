@@ -11,9 +11,8 @@ import (
 //go:embed effects/*.lua
 var luaEffectFS embed.FS
 
-func TestLuaEffect(t *testing.T) {
-
-	f, err := luaEffectFS.Open("effects/example.lua")
+func TestPoisonEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/poison.lua")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,30 +26,582 @@ func TestLuaEffect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if effectDef.GetName() != "example_effect" {
-		t.Error("expected effect name to be example_effect")
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(50)
+
+	attacker := ctx.NewCombatant(2)
+	target.AddEffect(effectDef, attacker)
+
+	if target.GetStat(hpStatDef).GetValue() != 50 {
+		t.Fatal("expected hp to be 50 before poison tick")
 	}
 
-	combatant := ctx.NewCombatant(1)
-	enemy := ctx.NewCombatant(2)
+	ctx.Tick()
 
-	if err := combatant.AddEffect(effectDef, enemy); err != nil {
-		t.Fatal(err)
+	if target.GetStat(hpStatDef).GetValue() != 48 {
+		t.Fatalf("expected hp to be 48 after 1 poison tick, got %d", target.GetStat(hpStatDef).GetValue())
 	}
 
-	if combatant.GetStat(hpStatDef).GetValue() != 25 {
-		t.Error("expected effect OnAdd to set combatant hp to 25")
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 46 {
+		t.Fatalf("expected hp to be 46 after 2 poison ticks, got %d", target.GetStat(hpStatDef).GetValue())
 	}
 
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 44 {
+		t.Fatalf("expected hp to be 44 after 3 poison ticks, got %d", target.GetStat(hpStatDef).GetValue())
+	}
 }
 
-func TestAttackDefend(t *testing.T) {
-
-	attackF, err := luaEffectFS.Open("effects/attack.lua")
+func TestRegenerateEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/regenerate.lua")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer attackF.Close()
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(10)
+
+	target.AddEffect(effectDef, nil)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 13 {
+		t.Fatalf("expected hp to be 13 after 1 regen tick, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 16 {
+		t.Fatalf("expected hp to be 16 after 2 regen ticks, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 19 {
+		t.Fatalf("expected hp to be 19 after 3 regen ticks, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestPoisonAndRegenerateInteraction(t *testing.T) {
+	poisonF, err := luaEffectFS.Open("effects/poison.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer poisonF.Close()
+
+	regenF, err := luaEffectFS.Open("effects/regenerate.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer regenF.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 200)
+
+	poisonDef, err := lua.NewLuaEffect(ctx, poisonF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	regenDef, err := lua.NewLuaEffect(ctx, regenF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(100)
+
+	attacker := ctx.NewCombatant(2)
+	target.AddEffect(poisonDef, attacker)
+	target.AddEffect(regenDef, attacker)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 101 {
+		t.Fatalf("expected hp to be 101 after 1 tick (100 - 2 poison + 3 regen = 101), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 102 {
+		t.Fatalf("expected hp to be 102 after 2 ticks, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.RemoveEffect(poisonDef)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 105 {
+		t.Fatalf("expected hp to be 105 after removing poison (only regen), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestShieldEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/shield.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 200)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.AddEffect(effectDef, nil)
+	target.GetStat(hpStatDef).SetBase(10)
+
+	if target.GetStat(hpStatDef).GetValue() != 20 {
+		t.Fatalf("expected hp to be 20 (doubled by shield), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.GetStat(hpStatDef).SetBase(5)
+
+	if target.GetStat(hpStatDef).GetValue() != 10 {
+		t.Fatalf("expected hp to be 10 (5*2), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.GetStat(hpStatDef).SetBase(15)
+
+	if target.GetStat(hpStatDef).GetValue() != 30 {
+		t.Fatalf("expected hp to be 30 (15*2), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestCounterEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/counter.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 200)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(30)
+
+	attacker := ctx.NewCombatant(2)
+	attacker.GetStat(hpStatDef).SetBase(30)
+
+	target.AddEffect(effectDef, attacker)
+
+	target.GetStat(hpStatDef).SetBase(25)
+
+	if target.GetStat(hpStatDef).GetValue() != 25 {
+		t.Fatalf("expected target hp to be 25, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	if attacker.GetStat(hpStatDef).GetValue() != 25 {
+		t.Fatalf("expected attacker hp to be 25 (30-5 counter), got %d", attacker.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestSelfHealEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/self_heal.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(20)
+
+	target.AddEffect(effectDef, nil)
+
+	target.GetStat(hpStatDef).SetBase(15)
+
+	if target.GetStat(hpStatDef).GetValue() != 16 {
+		t.Fatalf("expected hp to be 16 (15 + 1 self heal), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.GetStat(hpStatDef).SetBase(10)
+
+	if target.GetStat(hpStatDef).GetValue() != 11 {
+		t.Fatalf("expected hp to be 11 (10 + 1 self heal), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.GetStat(hpStatDef).SetBase(20)
+
+	if target.GetStat(hpStatDef).GetValue() != 20 {
+		t.Fatalf("expected hp to be 20 (full, no heal), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestTriggerEffect(t *testing.T) {
+	triggerF, err := luaEffectFS.Open("effects/trigger_effect.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer triggerF.Close()
+
+	buffF, err := luaEffectFS.Open("effects/buff.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer buffF.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+	strStatDef := ctx.NewStatDef("str", 0, 99)
+
+	triggerDef, err := lua.NewLuaEffect(ctx, triggerF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = lua.NewLuaEffect(ctx, buffF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(30)
+	target.GetStat(strStatDef).SetBase(5)
+
+	attacker := ctx.NewCombatant(2)
+	target.AddEffect(triggerDef, attacker)
+
+	target.GetStat(hpStatDef).SetBase(0)
+
+	if target.GetStat(strStatDef).GetValue() != 15 {
+		t.Fatalf("expected str to be 15 (5 + 10 buff), got %d", target.GetStat(strStatDef).GetValue())
+	}
+}
+
+func TestCopyStatEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/copy_stat.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+	strStatDef := ctx.NewStatDef("str", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source := ctx.NewCombatant(1)
+	source.GetStat(hpStatDef).SetBase(30)
+	source.GetStat(strStatDef).SetBase(12)
+
+	target := ctx.NewCombatant(2)
+	target.GetStat(hpStatDef).SetBase(20)
+	target.GetStat(strStatDef).SetBase(3)
+
+	target.AddEffect(effectDef, source)
+
+	if target.GetStat(strStatDef).GetValue() != 12 {
+		t.Fatalf("expected str to be 12 (copied from source), got %d", target.GetStat(strStatDef).GetValue())
+	}
+
+	if target.GetStat(hpStatDef).GetValue() != 20 {
+		t.Fatalf("expected hp to still be 20 (unchanged), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestReflectEffect(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/reflect.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 200)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(30)
+
+	attacker := ctx.NewCombatant(2)
+	attacker.GetStat(hpStatDef).SetBase(30)
+
+	target.AddEffect(effectDef, attacker)
+
+	target.GetStat(hpStatDef).SetBase(20)
+
+	if target.GetStat(hpStatDef).GetValue() != 20 {
+		t.Fatalf("expected target hp to be 20, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	if attacker.GetStat(hpStatDef).GetValue() != 20 {
+		t.Fatalf("expected attacker hp to be 20 (30-10 reflected), got %d", attacker.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestMultipleCombatantsWithEffects(t *testing.T) {
+	poisonF, err := luaEffectFS.Open("effects/poison.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer poisonF.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	poisonDef, err := lua.NewLuaEffect(ctx, poisonF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cmbt1 := ctx.NewCombatant(1)
+	cmbt1.GetStat(hpStatDef).SetBase(50)
+
+	cmbt2 := ctx.NewCombatant(2)
+	cmbt2.GetStat(hpStatDef).SetBase(40)
+
+	cmbt3 := ctx.NewCombatant(3)
+	cmbt3.GetStat(hpStatDef).SetBase(60)
+
+	cmbt1.AddEffect(poisonDef, cmbt2)
+	cmbt2.AddEffect(poisonDef, cmbt3)
+
+	ctx.Tick()
+
+	if cmbt1.GetStat(hpStatDef).GetValue() != 48 {
+		t.Fatalf("expected cmbt1 hp to be 48, got %d", cmbt1.GetStat(hpStatDef).GetValue())
+	}
+
+	if cmbt2.GetStat(hpStatDef).GetValue() != 38 {
+		t.Fatalf("expected cmbt2 hp to be 38, got %d", cmbt2.GetStat(hpStatDef).GetValue())
+	}
+
+	if cmbt3.GetStat(hpStatDef).GetValue() != 60 {
+		t.Fatalf("expected cmbt3 hp to be 60 (no poison), got %d", cmbt3.GetStat(hpStatDef).GetValue())
+	}
+
+	ctx.Tick()
+
+	if cmbt1.GetStat(hpStatDef).GetValue() != 46 {
+		t.Fatalf("expected cmbt1 hp to be 46, got %d", cmbt1.GetStat(hpStatDef).GetValue())
+	}
+
+	if cmbt2.GetStat(hpStatDef).GetValue() != 36 {
+		t.Fatalf("expected cmbt2 hp to be 36, got %d", cmbt2.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestNewCombatantEvent(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/copy_stat.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+	strStatDef := ctx.NewStatDef("str", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source := ctx.NewCombatant(1)
+	source.GetStat(hpStatDef).SetBase(30)
+	source.GetStat(strStatDef).SetBase(15)
+
+	target := ctx.NewCombatant(2)
+	target.AddEffect(effectDef, source)
+
+	if target.GetStat(strStatDef).GetValue() != 15 {
+		t.Fatalf("expected str to be 15 (copied from source), got %d", target.GetStat(strStatDef).GetValue())
+	}
+}
+
+func TestEffectOnNilSource(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/regenerate.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(10)
+
+	err = target.AddEffect(effectDef, nil)
+	if err != nil {
+		t.Fatal("expected no error when adding effect with nil source")
+	}
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 13 {
+		t.Fatalf("expected hp to be 13, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestEffectRemoval(t *testing.T) {
+	regenF, err := luaEffectFS.Open("effects/regenerate.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer regenF.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, regenF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(10)
+
+	target.AddEffect(effectDef, nil)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 13 {
+		t.Fatalf("expected hp to be 13 after regen, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+
+	target.RemoveEffect(effectDef)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 13 {
+		t.Fatalf("expected hp to stay 13 after removing regen, got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestMultipleEffectsSameCombatant(t *testing.T) {
+	poisonF, err := luaEffectFS.Open("effects/poison.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer poisonF.Close()
+
+	regenF, err := luaEffectFS.Open("effects/regenerate.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer regenF.Close()
+
+	shieldF, err := luaEffectFS.Open("effects/shield.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer shieldF.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+
+	poisonDef, err := lua.NewLuaEffect(ctx, poisonF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	regenDef, err := lua.NewLuaEffect(ctx, regenF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	shieldDef, err := lua.NewLuaEffect(ctx, shieldF)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	target := ctx.NewCombatant(1)
+	target.AddEffect(shieldDef, nil)
+	target.AddEffect(poisonDef, nil)
+	target.AddEffect(regenDef, nil)
+	target.GetStat(hpStatDef).SetBase(10)
+
+	ctx.Tick()
+
+	if target.GetStat(hpStatDef).GetValue() != 78 {
+		t.Fatalf("expected hp to be 78 (shield doubles all base changes: 10→20, poison -2→18 doubled→36, regen +3→39 doubled→78), got %d", target.GetStat(hpStatDef).GetValue())
+	}
+}
+
+func TestEffectWithNoEventResponse(t *testing.T) {
+	f, err := luaEffectFS.Open("effects/copy_stat.lua")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	ctx := nbattle.New()
+	hpStatDef := ctx.NewStatDef("hp", 0, 99)
+	strStatDef := ctx.NewStatDef("str", 0, 99)
+
+	effectDef, err := lua.NewLuaEffect(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source := ctx.NewCombatant(1)
+	source.GetStat(hpStatDef).SetBase(30)
+	source.GetStat(strStatDef).SetBase(10)
+
+	target := ctx.NewCombatant(2)
+	target.GetStat(hpStatDef).SetBase(20)
+	target.GetStat(strStatDef).SetBase(3)
+
+	target.AddEffect(effectDef, source)
+
+	ctx.Tick()
+
+	if target.GetStat(strStatDef).GetValue() != 10 {
+		t.Fatalf("expected str to still be 10 (no tick response), got %d", target.GetStat(strStatDef).GetValue())
+	}
+
+	source.GetStat(strStatDef).SetBase(20)
+
+	if target.GetStat(strStatDef).GetValue() != 10 {
+		t.Fatalf("expected str to still be 10 (copy_stat only copies on add), got %d", target.GetStat(strStatDef).GetValue())
+	}
+}
+
+func TestDefendEffectWithReducedDamage(t *testing.T) {
 	defendF, err := luaEffectFS.Open("effects/defend.lua")
 	if err != nil {
 		t.Fatal(err)
@@ -58,32 +609,24 @@ func TestAttackDefend(t *testing.T) {
 	defer defendF.Close()
 
 	ctx := nbattle.New()
-	hpStatDef := ctx.NewStatDef("hp", 0, 99)
-	strStatDef := ctx.NewStatDef("str", 0, 99)
-	defStatDef := ctx.NewStatDef("def", 0, 99)
+	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	attackEffectDef, err := lua.NewLuaEffect(ctx, attackF)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defendEffectDef, err := lua.NewLuaEffect(ctx, defendF)
+	effectDef, err := lua.NewLuaEffect(ctx, defendF)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	combatant := ctx.NewCombatant(1)
-	combatant.GetStat(hpStatDef).SetBase(30)
-	combatant.GetStat(strStatDef).SetBase(5)
+	target := ctx.NewCombatant(1)
+	target.GetStat(hpStatDef).SetBase(30)
 
-	enemy := ctx.NewCombatant(2)
-	enemy.GetStat(hpStatDef).SetBase(30)
-	enemy.GetStat(defStatDef).SetBase(1)
+	attacker := ctx.NewCombatant(2)
+	attacker.GetStat(hpStatDef).SetBase(30)
 
-	enemy.AddEffect(defendEffectDef, enemy)
-	enemy.AddEffect(attackEffectDef, combatant)
+	target.AddEffect(effectDef, attacker)
 
-	if enemy.GetStat(hpStatDef).GetValue() != 28 {
-		t.Error("expect enemy combatant hp to be 28")
+	target.GetStat(hpStatDef).SetBase(20)
+
+	if target.GetStat(hpStatDef).GetValue() != 25 {
+		t.Fatalf("expected target hp to be 25 (took only half the damage: 30->25 instead of 30->20), got %d", target.GetStat(hpStatDef).GetValue())
 	}
-
 }
