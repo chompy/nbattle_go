@@ -4,10 +4,10 @@ import (
 	"log"
 
 	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 )
 
-func EventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
+func eventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
 	out := make(map[string]any)
 	out["type"] = evt.Type()
 	switch evt := evt.(type) {
@@ -22,7 +22,7 @@ func EventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
 			log.Println("WARNING: Error during EventToLua:", err)
 			return out
 		}
-		out["combatant"] = CombatantToLua(ctx, combatant)
+		out["combatant"] = combatantToLua(ctx, combatant)
 
 	case *event.CombatantStatBase:
 		out["value"] = evt.Value
@@ -34,15 +34,15 @@ func EventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
 			log.Println("WARNING: Error during EventToLua:", err)
 			return out
 		}
-		out["combatant"] = CombatantToLua(ctx, combatant)
-		out["stat"] = StatToLua(ctx, combatant.GetStat(evt.StatDefID))
+		out["combatant"] = combatantToLua(ctx, combatant)
+		out["stat"] = statToLua(ctx, combatant.GetStat(evt.StatDefID))
 
 	case *event.CombatantStatMod:
 		out["modValue"] = evt.ModValue
 		out["setModValue"] = func(value float64) {
 			evt.ModValue = int(value)
 		}
-		out["source"] = ObjectToLua(ctx, ctx.GetObjectByID(evt.SourceID))
+		out["source"] = objectToLua(ctx, ctx.GetObjectByID(evt.SourceID))
 
 		combatant, err := ctx.GetCombatantByID(evt.CombatantID)
 		if err != nil {
@@ -50,7 +50,7 @@ func EventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
 			return out
 		}
 		out["combatant"] = combatant
-		out["stat"] = StatToLua(ctx, combatant.GetStat(evt.StatDefID))
+		out["stat"] = statToLua(ctx, combatant.GetStat(evt.StatDefID))
 
 	case *event.CombatantEffect:
 		effectDef, err := ctx.GetEffectDefByID(evt.EffectDefID)
@@ -63,10 +63,10 @@ func EventToLua(ctx *nbattle.Context, evt event.Event) map[string]any {
 			log.Println("WARNING: Error during EventToLua:", err)
 			return out
 		}
-		out["target"] = CombatantToLua(ctx, target)
+		out["target"] = combatantToLua(ctx, target)
 		out["effect"] = effectDef.GetName()
 		out["potency"] = evt.Potency
-		out["source"] = ObjectToLua(ctx, ctx.GetObjectByID(evt.SourceID))
+		out["source"] = objectToLua(ctx, ctx.GetObjectByID(evt.SourceID))
 	}
 
 	return out

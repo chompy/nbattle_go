@@ -4,7 +4,7 @@ import (
 	"io"
 
 	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 	luago "github.com/rosbit/luago"
 )
 
@@ -12,18 +12,7 @@ type LuaEffect struct {
 	luaCtx *luago.LuaContext
 }
 
-func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext, error) {
-	luaCtx, err := luago.NewContext()
-	if err != nil {
-		return nil, err
-	}
-	if err := luaCtx.LoadScript(string(scriptBytes), LuaGlobals(ctx)); err != nil {
-		return nil, err
-	}
-	return luaCtx, nil
-}
-
-func NewLuaEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, error) {
+func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, error) {
 	scriptBytes, err := io.ReadAll(script)
 	if err != nil {
 		return nil, err
@@ -50,10 +39,21 @@ func NewLuaEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, e
 
 }
 
+func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext, error) {
+	luaCtx, err := luago.NewContext()
+	if err != nil {
+		return nil, err
+	}
+	if err := luaCtx.LoadScript(string(scriptBytes), luaGlobals(ctx)); err != nil {
+		return nil, err
+	}
+	return luaCtx, nil
+}
+
 func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnAdd",
-		CombatantToLua(ctx.Ctx, ctx.Target),
-		ObjectToLua(ctx.Ctx, ctx.Source),
+		combatantToLua(ctx.Ctx, ctx.Target),
+		objectToLua(ctx.Ctx, ctx.Source),
 		ctx.Potency,
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
@@ -62,8 +62,8 @@ func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 
 func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnRemove",
-		CombatantToLua(ctx.Ctx, ctx.Target),
-		ObjectToLua(ctx.Ctx, ctx.Source),
+		combatantToLua(ctx.Ctx, ctx.Target),
+		objectToLua(ctx.Ctx, ctx.Source),
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
@@ -71,9 +71,9 @@ func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
 
 func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
 	if _, err := e.luaCtx.CallFunc("OnEvent",
-		EventToLua(ctx.Ctx, event),
-		CombatantToLua(ctx.Ctx, ctx.Target),
-		ObjectToLua(ctx.Ctx, ctx.Source),
+		eventToLua(ctx.Ctx, event),
+		combatantToLua(ctx.Ctx, ctx.Target),
+		objectToLua(ctx.Ctx, ctx.Source),
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnEvent")
 	}
@@ -81,7 +81,7 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
 
 func EffectContextToLua(ctx *nbattle.EffectCtx) map[string]any {
 	return map[string]any{
-		"target": CombatantToLua(ctx.Ctx, ctx.Target),
-		"source": ObjectToLua(ctx.Ctx, ctx.Source),
+		"target": combatantToLua(ctx.Ctx, ctx.Target),
+		"source": objectToLua(ctx.Ctx, ctx.Source),
 	}
 }

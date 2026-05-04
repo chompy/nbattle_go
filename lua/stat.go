@@ -4,9 +4,9 @@ import (
 	nbattle "github.com/chompy/nbattle_go"
 )
 
-func StatDefToLua(statDef *nbattle.StatDef) map[string]any {
+func statDefToLua(statDef *nbattle.StatDef) map[string]any {
 	if statDef == nil {
-		return ErrorToLua(nbattle.ErrNilObject)
+		return errorToLua(nbattle.ErrNilObject)
 	}
 	return map[string]any{
 		"type": statDef.GetType(),
@@ -16,9 +16,9 @@ func StatDefToLua(statDef *nbattle.StatDef) map[string]any {
 	}
 }
 
-func StatToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
+func statToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 	return map[string]any{
-		"def":     StatDefToLua(stat.GetDef()),
+		"def":     statDefToLua(stat.GetDef()),
 		"getBase": stat.GetBase,
 		"setBase": func(value float64) {
 			stat.SetBase(int(value))
@@ -28,7 +28,7 @@ func StatToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 		},
 		"getValue": stat.GetValue,
 		"setMod": func(source any, value int) {
-			sourceObj, err := ObjectFromLua(ctx, source)
+			sourceObj, err := objectFromLua(ctx, source)
 			if err != nil {
 				logLuaFuncCallError(err, "stat.setMod")
 				return
@@ -47,7 +47,7 @@ func StatToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 		},
 		"getCombatant": func() map[string]any {
 			combatant, _ := ctx.GetCombatantWithStat(stat)
-			return CombatantToLua(ctx, combatant)
+			return combatantToLua(ctx, combatant)
 		},
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 )
 
 type TestEffect struct {

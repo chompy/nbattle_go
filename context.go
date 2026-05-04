@@ -1,7 +1,7 @@
 package nbattle
 
 import (
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 )
 
 type Context struct {

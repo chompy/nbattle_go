@@ -6,7 +6,7 @@ import (
 	nbattle "github.com/chompy/nbattle_go"
 )
 
-func CombatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[string]any {
+func combatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[string]any {
 	if combatant == nil {
 		return map[string]any{
 			"type":  nbattle.ObjectTypeUnknown,
@@ -17,7 +17,7 @@ func CombatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 		"id":   combatant.GetID(),
 		"type": combatant.GetType(),
 		"getStat": func(statDefName string) map[string]any {
-			return StatToLua(ctx, combatant.GetStat(statDefName))
+			return statToLua(ctx, combatant.GetStat(statDefName))
 		},
 		"setEffect": func(effectDef any, potency int, sourceObj any) {
 			if err := combatant.SetEffect(effectDef, potency, sourceObj); err != nil {
@@ -28,7 +28,7 @@ func CombatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 	}
 }
 
-func CombatantFromLua(combatant any, ctx *nbattle.Context) (*nbattle.Combatant, error) {
+func combatantFromLua(combatant any, ctx *nbattle.Context) (*nbattle.Combatant, error) {
 	switch combatant := combatant.(type) {
 	case map[string]any:
 		id, ok := combatant["id"].(int)

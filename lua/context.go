@@ -4,10 +4,10 @@ import (
 	"log"
 
 	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 )
 
-func LuaGlobals(ctx *nbattle.Context) map[string]any {
+func luaGlobals(ctx *nbattle.Context) map[string]any {
 	return map[string]any{
 		"TICK":                event.TickEvent,
 		"COMBATANT_UPDATE":    event.CombatantUpdateEvent,
@@ -17,27 +17,27 @@ func LuaGlobals(ctx *nbattle.Context) map[string]any {
 		"STAT_DEF":            nbattle.ObjectTypeStatDef,
 		"EFFECT_DEF":          nbattle.ObjectTypeEffectDef,
 		"COMBATANT":           nbattle.ObjectTypeCombatant,
-		"ctx":                 ContextToLua(ctx),
+		"ctx":                 contextToLua(ctx),
 	}
 }
 
-func ContextToLua(ctx *nbattle.Context) map[string]any {
+func contextToLua(ctx *nbattle.Context) map[string]any {
 	return map[string]any{
 		"getTick": ctx.GetTick,
 		"getCombatants": func() []map[string]any {
 			out := make([]map[string]any, 0)
 			for _, combatant := range ctx.GetCombatants() {
-				out = append(out, CombatantToLua(ctx, combatant))
+				out = append(out, combatantToLua(ctx, combatant))
 			}
 			return out
 		},
 		"getObject": func(obj any) {
-			ObjectToLua(ctx, obj)
+			objectToLua(ctx, obj)
 		},
 	}
 }
 
-func ErrorToLua(err error) map[string]any {
+func errorToLua(err error) map[string]any {
 	log.Println("WARNING: Error during Lua call:", err)
 	return map[string]any{
 		"type":  nbattle.ObjectTypeError,
@@ -45,7 +45,7 @@ func ErrorToLua(err error) map[string]any {
 	}
 }
 
-func ObjectIDFromLua(object any) (int, error) {
+func objectIDFromLua(object any) (int, error) {
 	switch object := object.(type) {
 	case map[string]any:
 		id, ok := object["id"].(int)
@@ -67,8 +67,8 @@ func ObjectIDFromLua(object any) (int, error) {
 	return 0, nbattle.ErrUnexpectedObjectType
 }
 
-func ObjectFromLua(ctx *nbattle.Context, object any) (nbattle.Object, error) {
-	id, err := ObjectIDFromLua(object)
+func objectFromLua(ctx *nbattle.Context, object any) (nbattle.Object, error) {
+	id, err := objectIDFromLua(object)
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +79,14 @@ func ObjectFromLua(ctx *nbattle.Context, object any) (nbattle.Object, error) {
 	return obj, nil
 }
 
-func ObjectToLua(ctx *nbattle.Context, object any) map[string]any {
+func objectToLua(ctx *nbattle.Context, object any) map[string]any {
 	switch object := object.(type) {
 	case *nbattle.StatDef:
-		return StatDefToLua(object)
+		return statDefToLua(object)
 	case *nbattle.Stat:
-		return StatToLua(ctx, object)
+		return statToLua(ctx, object)
 	case *nbattle.Combatant:
-		return CombatantToLua(ctx, object)
+		return combatantToLua(ctx, object)
 	}
 	return map[string]any{
 		"type":  "unknown",

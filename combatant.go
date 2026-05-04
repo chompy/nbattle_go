@@ -3,7 +3,7 @@ package nbattle
 import (
 	"slices"
 
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 )
 
 type CombatantEffect struct {

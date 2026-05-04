@@ -1,6 +1,6 @@
 package nbattle
 
-import "github.com/chompy/nbattle_go/internal/event"
+import "github.com/chompy/nbattle_go/event"
 
 type StatDef struct {
 	BaseObject
