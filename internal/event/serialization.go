@@ -15,6 +15,12 @@ func serialize(data ...any) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
+		case bool:
+			byteValue := byte(1)
+			if !v {
+				byteValue = 0
+			}
+			out = append(out, byteValue)
 		case string:
 			strLen := uint16(len(v))
 			out, err = binary.Append(out, binary.BigEndian, strLen)
@@ -50,6 +56,14 @@ func (d *deserializer) ReadByte() (byte, error) {
 		return 0, err
 	}
 	return data[0], nil
+}
+
+func (d *deserializer) ReadBool() (bool, error) {
+	data, err := d.ReadBytes(1)
+	if err != nil {
+		return false, err
+	}
+	return data[0] != 0, nil
 }
 
 func (d *deserializer) ReadInt() (int, error) {

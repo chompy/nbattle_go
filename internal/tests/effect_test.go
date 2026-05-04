@@ -34,12 +34,12 @@ func TestCombatantEffect(t *testing.T) {
 		return &TestEffect{hpStat: statDefHP}
 	})
 
-	cmbt := ctx.NewCombatant(1)
+	cmbt := ctx.NewCombatant()
 	cmbt.GetStat(statDefHP).SetBase(15)
 
-	srcCmbt := ctx.NewCombatant(1)
+	srcCmbt := ctx.NewCombatant()
 
-	cmbt.AddEffect(effectDefTest, srcCmbt)
+	cmbt.SetEffect(effectDefTest, 1, srcCmbt)
 
 	if cmbt.GetStat(statDefHP).GetValue() != 29 {
 		t.Fatal("expected effect to set combatant hp to 29 on add")
@@ -57,7 +57,7 @@ func TestCombatantEffect(t *testing.T) {
 		t.Fatal("expected effect reduce combatant hp by 1 on tick")
 	}
 
-	cmbt.RemoveEffect(effectDefTest)
+	cmbt.SetEffect(effectDefTest, 0, nil)
 
 	if cmbt.GetStat(statDefHP).GetValue() != 31 {
 		t.Fatal("expected effect to set combatant hp to 31 on removal")

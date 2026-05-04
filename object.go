@@ -5,7 +5,6 @@ type ObjectType int
 const (
 	ObjectTypeStatDef = iota
 	ObjectTypeEffectDef
-	ObjectTypeStat
 	ObjectTypeCombatant
 	ObjectTypeUnknown
 	ObjectTypeError

@@ -13,7 +13,7 @@ type CombatantEffect struct {
 
 type Combatant struct {
 	BaseObject
-	Team    int
+	active  bool
 	stats   []*Stat
 	effects []*CombatantEffect
 }
@@ -25,6 +25,17 @@ func (c *Combatant) GetType() ObjectType {
 func (c *Combatant) Reset() {
 	for _, stat := range c.stats {
 		stat.Reset()
+	}
+}
+
+func (c *Combatant) IsActive() bool {
+	return c.active
+}
+
+func (c *Combatant) SetActive(active bool) {
+	if active != c.active {
+		c.active = active
+		c.ctx.EmitEvent(&event.CombatantUpdate{CombatantID: c.GetID(), Active: c.active})
 	}
 }
 
@@ -41,9 +52,7 @@ func (c *Combatant) GetStat(obj any) *Stat {
 			return stat
 		}
 	}
-	stat := &Stat{c.ctx.newObject(), def, 0, nil}
-	c.ctx.EmitEvent(&event.AddCombatantStat{CombatantID: c.GetID(), StatID: stat.GetID(), StatDefID: def.GetID()})
-	c.ctx.objects = append(c.ctx.objects, stat)
+	stat := &Stat{def, 0, nil}
 	c.stats = append(c.stats, stat)
 	return stat
 }
@@ -52,34 +61,40 @@ func (c *Combatant) GetStats() []*Stat {
 	return c.stats
 }
 
-func (c *Combatant) AddEffect(effectDefObj any, sourceObj any) error {
+func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) error {
 	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
 	if !ok {
 		return ErrObjectNotFound
 	}
+	source := c.ctx.GetObject(sourceObj)
+
+	if err := c.removeEffect(effectDef); err != nil {
+		return err
+	}
+	if potency <= 0 {
+		return nil
+	}
+
+	return c.addEffect(effectDef, potency, source)
+}
+
+func (c *Combatant) addEffect(effectDef *EffectDef, potency int, source Object) error {
 	effect := effectDef.new()
-	effectCtx := &EffectCtx{c.ctx, effectDef, nil, c}
+	effectCtx := &EffectCtx{c.ctx, effectDef, potency, c, source}
 	combatantEffect := &CombatantEffect{effect, effectCtx}
 	c.effects = append(c.effects, combatantEffect)
 	sourceID := 0
-	if sourceObj != nil {
-		if src, ok2 := c.ctx.GetObject(sourceObj).(*Combatant); ok2 {
-			sourceID = src.GetID()
-			effectCtx.Source = src
-		}
+	if source != nil {
+		sourceID = source.GetID()
 	}
 	c.ctx.addEffectToStack(effect)
 	effect.OnAdd(effectCtx)
 	c.ctx.removeEffectFromStack(effect)
-	c.ctx.EmitEvent(&event.AddCombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), SourceID: sourceID})
+	c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), Potency: potency, SourceID: sourceID})
 	return nil
 }
 
-func (c *Combatant) RemoveEffect(effectDefObj any) error {
-	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
-	if !ok {
-		return ErrObjectNotFound
-	}
+func (c *Combatant) removeEffect(effectDef *EffectDef) error {
 	c.effects = slices.DeleteFunc(c.effects, func(e *CombatantEffect) bool {
 		if e.EffectCtx.Def.GetID() == effectDef.GetID() {
 			c.ctx.addEffectToStack(e.Effect)
@@ -89,8 +104,18 @@ func (c *Combatant) RemoveEffect(effectDefObj any) error {
 		}
 		return false
 	})
-	c.ctx.EmitEvent(&event.RemoveCombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID()})
+	c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), Potency: 0, SourceID: 0})
 	return nil
+}
+
+func (c *Combatant) HasEffect(effectDefObj any) bool {
+	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
+	if !ok {
+		return false
+	}
+	return slices.ContainsFunc(c.effects, func(e *CombatantEffect) bool {
+		return e.EffectCtx.Def.GetID() == effectDef.GetID()
+	})
 }
 
 func (c *Combatant) HandleEffectEvent(event event.Event) error {

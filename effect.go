@@ -21,10 +21,11 @@ func (d *EffectDef) GetName() string {
 }
 
 type EffectCtx struct {
-	Ctx    *Context
-	Def    *EffectDef
-	Source *Combatant
-	Target *Combatant
+	Ctx     *Context
+	Def     *EffectDef
+	Potency int
+	Target  *Combatant
+	Source  Object
 }
 
 type Effect interface {

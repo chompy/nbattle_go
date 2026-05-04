@@ -45,6 +45,12 @@ func (c *Context) GetObject(obj any) Object {
 		if effectDef != nil {
 			return effectDef
 		}
+	case map[string]any:
+		objID, ok := obj["id"].(int)
+		if !ok {
+			return nil
+		}
+		return c.GetObjectByID(objID)
 	}
 	return nil
 }
@@ -101,18 +107,6 @@ func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
 	return nil, ErrObjectNotFound
 }
 
-func (c *Context) GetStatByID(ID int) (*Stat, error) {
-	statObj := c.GetObjectByID(ID)
-	if statObj == nil {
-		return nil, ErrObjectNotFound
-	}
-	stat, ok := statObj.(*Stat)
-	if !ok {
-		return nil, ErrUnexpectedObjectType
-	}
-	return stat, nil
-}
-
 func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), name, create}
 	c.objects = append(c.objects, effectDef)
@@ -144,18 +138,19 @@ func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
 	return nil, ErrObjectNotFound
 }
 
-func (c *Context) NewCombatant(team int) *Combatant {
-	combatant := &Combatant{c.newObject(), team, make([]*Stat, 0), make([]*CombatantEffect, 0)}
+func (c *Context) NewCombatant() *Combatant {
+	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0)}
 	c.objects = append(c.objects, combatant)
-	c.EmitEvent(&event.NewCombatant{ID: combatant.GetID(), Team: team})
+	combatant.SetActive(true)
 	return combatant
 }
 
-func (c *Context) NewCombatantWithID(ID int, team int) *Combatant {
+func (c *Context) newCombatantWithID(ID int) *Combatant {
 	combatant, err := c.GetCombatantByID(ID)
 	if err == ErrObjectNotFound {
-		combatant = c.NewCombatant(team)
-		combatant.id = ID
+		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0)}
+		c.objects = append(c.objects, combatant)
+		return combatant
 	}
 	return combatant
 }
@@ -187,7 +182,7 @@ func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
 	combatants := c.GetCombatants()
 	for _, combatant := range combatants {
 		for _, combatantStat := range combatant.GetStats() {
-			if combatantStat.GetID() == stat.GetID() {
+			if combatantStat == stat {
 				return combatant, nil
 			}
 		}
@@ -209,66 +204,49 @@ func (c *Context) HookEvents(hook event.Hook) {
 	c.eventHooks = append(c.eventHooks, hook)
 }
 
-func (c *Context) HandleEvent(e event.Event) error {
-	switch ev := e.(type) {
+func (c *Context) HandleEvent(evt event.Event) error {
+	switch evt := evt.(type) {
 	case *event.Tick:
-		for c.GetTick() < ev.Tick {
+		for c.GetTick() < evt.Tick {
 			c.Tick()
 		}
-	case *event.NewCombatant:
-		c.NewCombatantWithID(ev.ID, ev.Team)
-
-	case *event.AddCombatantStat:
-		combatant, err := c.GetCombatantByID(ev.CombatantID)
+	case *event.CombatantUpdate:
+		combatant, err := c.GetCombatantByID(evt.CombatantID)
 		if err != nil {
+			if err == ErrObjectNotFound {
+				combatant = c.newCombatantWithID(evt.CombatantID)
+				combatant.SetActive(evt.Active)
+				return nil
+			}
 			return err
 		}
-		stat := combatant.GetStat(ev.StatDefID)
-		stat.id = ev.StatID
-
-	case *event.StatBase:
-		statObj := c.GetObjectByID(ev.StatID)
-		if statObj == nil {
-			return ErrObjectNotFound
-		}
-		stat, ok := statObj.(*Stat)
-		if !ok {
-			return ErrUnexpectedObjectType
-		}
-		stat.SetBase(ev.Value)
+		combatant.SetActive(evt.Active)
 		return nil
 
-	case *event.StatMod:
-		statObj := c.GetObjectByID(ev.StatID)
-		if statObj == nil {
-			return ErrObjectNotFound
-		}
-		stat, ok := statObj.(*Stat)
-		if !ok {
-			return ErrUnexpectedObjectType
-		}
-		stat.SetMod(ev.SourceID, ev.ModValue)
-
-	case *event.AddCombatantEffect:
-		target, err := c.GetCombatantByID(ev.TargetID)
+	case *event.CombatantStatBase:
+		combatant, err := c.GetCombatantByID(evt.CombatantID)
 		if err != nil {
 			return err
 		}
-		// source optional
-		sourceObj := c.GetObjectByID(ev.SourceID)
-		if sourceObj != nil {
-			// allow nil if source not provided
-			target.AddEffect(ev.EffectDefID, sourceObj)
-		} else {
-			target.AddEffect(ev.EffectDefID, nil)
-		}
+		stat := combatant.GetStat(evt.StatDefID)
+		stat.SetBase(evt.Value)
 
-	case *event.RemoveCombatantEffect:
-		target, err := c.GetCombatantByID(ev.TargetID)
+	case *event.CombatantStatMod:
+		combatant, err := c.GetCombatantByID(evt.CombatantID)
 		if err != nil {
 			return err
 		}
-		target.RemoveEffect(ev.EffectDefID)
+		stat := combatant.GetStat(evt.StatDefID)
+		stat.SetMod(evt.SourceID, evt.ModValue)
+		return nil
+
+	case *event.CombatantEffect:
+		target, err := c.GetCombatantByID(evt.TargetID)
+		if err != nil {
+			return err
+		}
+		target.SetEffect(evt.EffectDefID, evt.Potency, evt.SourceID)
+
 	}
 	return nil
 }

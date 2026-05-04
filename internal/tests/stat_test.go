@@ -30,7 +30,7 @@ func TestStatDef(t *testing.T) {
 func TestStatBase(t *testing.T) {
 	ctx := nbattle.New()
 	strDef := ctx.NewStatDef("str", 0, 99)
-	combatant := ctx.NewCombatant(1)
+	combatant := ctx.NewCombatant()
 	strStat := combatant.GetStat(strDef)
 
 	strStat.SetBase(30)
@@ -78,9 +78,9 @@ func TestStatMod(t *testing.T) {
 	ctx := nbattle.New()
 	strDef := ctx.NewStatDef("str", 0, 99)
 
-	combatant := ctx.NewCombatant(1)
-	enemy := ctx.NewCombatant(2)
-	ally := ctx.NewCombatant(2)
+	combatant := ctx.NewCombatant()
+	enemy := ctx.NewCombatant()
+	ally := ctx.NewCombatant()
 	strStat := combatant.GetStat(strDef)
 
 	strStat.SetBase(30)

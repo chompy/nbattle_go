@@ -1,18 +1,18 @@
 package event
 
-type AddCombatantStat struct {
+type CombatantStatBase struct {
 	CombatantID int
-	StatID      int
 	StatDefID   int
+	Value       int
 }
 
-func (e *AddCombatantStat) Type() Type { return AddCombatantStatEvent }
+func (e *CombatantStatBase) Type() Type { return CombatantStatBaseEvent }
 
-func (e *AddCombatantStat) Serialize() ([]byte, error) {
-	return serialize(e.Type(), e.CombatantID, e.StatID, e.StatDefID)
+func (e *CombatantStatBase) Serialize() ([]byte, error) {
+	return serialize(e.Type(), e.CombatantID, e.StatDefID, e.Value)
 }
 
-func (e *AddCombatantStat) Deserialize(data []byte) error {
+func (e *CombatantStatBase) Deserialize(data []byte) error {
 	d := newDeserializer(data)
 	evType, err := d.ReadByte()
 	if err != nil {
@@ -25,17 +25,16 @@ func (e *AddCombatantStat) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	statId, err := d.ReadInt()
-	if err != nil {
-		return err
-	}
 	statDefId, err := d.ReadInt()
 	if err != nil {
 		return err
 	}
-
+	value, err := d.ReadInt()
+	if err != nil {
+		return err
+	}
 	e.CombatantID = combatantId
-	e.StatID = statId
 	e.StatDefID = statDefId
+	e.Value = value
 	return nil
 }

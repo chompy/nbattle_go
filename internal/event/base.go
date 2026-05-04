@@ -6,12 +6,10 @@ type Type uint8
 
 const (
 	TickEvent Type = iota
-	NewCombatantEvent
-	StatBaseEvent
-	StatModEvent
-	AddCombatantStatEvent
-	AddCombatantEffectEvent
-	RemoveCombatantEffectEvent
+	CombatantUpdateEvent
+	CombatantStatBaseEvent
+	CombatantStatModEvent
+	CombatantEffectEvent
 )
 
 type Event interface {

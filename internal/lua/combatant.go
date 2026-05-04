@@ -19,21 +19,12 @@ func CombatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 		"getStat": func(statDefName string) map[string]any {
 			return StatToLua(ctx, combatant.GetStat(statDefName))
 		},
-		"addEffect": func(name string, sourceObj any) {
-			sourceID := 0
-			source, ok := sourceObj.(map[string]any)
-			if ok {
-				sourceID = source["id"].(int)
-			}
-			if err := combatant.AddEffect(name, sourceID); err != nil {
+		"setEffect": func(effectDef any, potency int, sourceObj any) {
+			if err := combatant.SetEffect(effectDef, potency, sourceObj); err != nil {
 				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.addEffect", combatant.GetID()))
 			}
 		},
-		"removeEffect": func(name string) {
-			if err := combatant.RemoveEffect(name); err != nil {
-				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.removeEffect", combatant.GetID()))
-			}
-		},
+		"hasEffect": combatant.HasEffect,
 	}
 }
 

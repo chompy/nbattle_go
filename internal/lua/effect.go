@@ -53,7 +53,8 @@ func NewLuaEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, e
 func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnAdd",
 		CombatantToLua(ctx.Ctx, ctx.Target),
-		CombatantToLua(ctx.Ctx, ctx.Source),
+		ObjectToLua(ctx.Ctx, ctx.Source),
+		ctx.Potency,
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
 	}
@@ -62,7 +63,7 @@ func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnRemove",
 		CombatantToLua(ctx.Ctx, ctx.Target),
-		CombatantToLua(ctx.Ctx, ctx.Source),
+		ObjectToLua(ctx.Ctx, ctx.Source),
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
@@ -72,7 +73,7 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
 	if _, err := e.luaCtx.CallFunc("OnEvent",
 		EventToLua(ctx.Ctx, event),
 		CombatantToLua(ctx.Ctx, ctx.Target),
-		CombatantToLua(ctx.Ctx, ctx.Source),
+		ObjectToLua(ctx.Ctx, ctx.Source),
 	); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnEvent")
 	}
@@ -80,7 +81,7 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
 
 func EffectContextToLua(ctx *nbattle.EffectCtx) map[string]any {
 	return map[string]any{
-		"source": CombatantToLua(ctx.Ctx, ctx.Source),
 		"target": CombatantToLua(ctx.Ctx, ctx.Target),
+		"source": ObjectToLua(ctx.Ctx, ctx.Source),
 	}
 }

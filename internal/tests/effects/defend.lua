@@ -9,7 +9,7 @@ function OnRemove()
 end
 
 function OnEvent(event, target, source)
-    if (event.type == STAT_BASE) then
+    if (event.type == COMBATANT_STAT_BASE) then
         if (event.stat.getCombatant().id == target.id) then
             local diff = target.getStat("hp").get() - event.value
             if diff > 0 then

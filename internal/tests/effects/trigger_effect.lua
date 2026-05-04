@@ -9,10 +9,10 @@ function OnRemove()
 end
 
 function OnEvent(event, target, source)
-    if (event.type == STAT_BASE) then
+    if (event.type == COMBATANT_STAT_BASE) then
         if (event.stat.getCombatant().id == target.id and event.stat.def.name == "hp") then
             if event.value <= 0 then
-                target.addEffect("buff", source)
+                target.setEffect("buff", 1, source)
             end
         end
     end

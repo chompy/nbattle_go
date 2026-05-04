@@ -9,17 +9,15 @@ import (
 
 func LuaGlobals(ctx *nbattle.Context) map[string]any {
 	return map[string]any{
-		"TICK":                    event.TickEvent,
-		"STAT_BASE":               event.StatBaseEvent,
-		"STAT_MOD":                event.StatModEvent,
-		"NEW_COMBATANT":           event.NewCombatantEvent,
-		"ADD_COMBATANT_EFFECT":    event.AddCombatantEffectEvent,
-		"REMOVE_COMBATANT_EFFECT": event.RemoveCombatantEffectEvent,
-		"STAT_DEF":                nbattle.ObjectTypeStatDef,
-		"STAT":                    nbattle.ObjectTypeStat,
-		"EFFECT_DEF":              nbattle.ObjectTypeEffectDef,
-		"COMBATANT":               nbattle.ObjectTypeCombatant,
-		"ctx":                     ContextToLua(ctx),
+		"TICK":                event.TickEvent,
+		"COMBATANT_UPDATE":    event.CombatantUpdateEvent,
+		"COMBATANT_STAT_BASE": event.CombatantStatBaseEvent,
+		"COMBATANT_STAT_MOD":  event.CombatantStatModEvent,
+		"COMBATANT_EFFECT":    event.CombatantEffectEvent,
+		"STAT_DEF":            nbattle.ObjectTypeStatDef,
+		"EFFECT_DEF":          nbattle.ObjectTypeEffectDef,
+		"COMBATANT":           nbattle.ObjectTypeCombatant,
+		"ctx":                 ContextToLua(ctx),
 	}
 }
 
@@ -33,7 +31,9 @@ func ContextToLua(ctx *nbattle.Context) map[string]any {
 			}
 			return out
 		},
-		"getObject": func(obj any) {},
+		"getObject": func(obj any) {
+			ObjectToLua(ctx, obj)
+		},
 	}
 }
 

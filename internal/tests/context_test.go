@@ -20,7 +20,7 @@ func TestHandleEvent(t *testing.T) {
 
 	srcCtx.HookEvents(recCtx.HandleEvent)
 
-	cmbt := srcCtx.NewCombatant(1)
+	cmbt := srcCtx.NewCombatant()
 	cmbt.GetStat("hp").SetBase(30)
 	cmbt.GetStat("max_hp").SetBase(30)
 
