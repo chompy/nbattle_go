@@ -4,20 +4,14 @@ import (
 	"log"
 
 	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/event"
 )
 
 func luaGlobals(ctx *nbattle.Context) map[string]any {
 	return map[string]any{
-		"TICK":                event.TickEvent,
-		"COMBATANT_UPDATE":    event.CombatantUpdateEvent,
-		"COMBATANT_STAT_BASE": event.CombatantStatBaseEvent,
-		"COMBATANT_STAT_MOD":  event.CombatantStatModEvent,
-		"COMBATANT_EFFECT":    event.CombatantEffectEvent,
-		"STAT_DEF":            nbattle.ObjectTypeStatDef,
-		"EFFECT_DEF":          nbattle.ObjectTypeEffectDef,
-		"COMBATANT":           nbattle.ObjectTypeCombatant,
-		"ctx":                 contextToLua(ctx),
+		"STAT_DEF":   nbattle.ObjectTypeStatDef,
+		"EFFECT_DEF": nbattle.ObjectTypeEffectDef,
+		"COMBATANT":  nbattle.ObjectTypeCombatant,
+		"ctx":        contextToLua(ctx),
 	}
 }
 

@@ -3,6 +3,7 @@ package lua
 import (
 	"errors"
 	"log"
+	"strings"
 )
 
 var (
@@ -10,5 +11,12 @@ var (
 )
 
 func logLuaFuncCallError(err error, funcName string) {
-	log.Printf("WARNING: Error during Lua function call to %s: %s", funcName, err.Error())
+	if !isLuaNotFoundErr(err) {
+		log.Printf("WARNING: Error during Lua function call to %s: %s", funcName, err.Error())
+	}
+}
+
+func isLuaNotFoundErr(err error) bool {
+	errStr := err.Error()
+	return strings.HasPrefix(errStr, "function") && strings.HasSuffix(errStr, "not found")
 }

@@ -2,6 +2,7 @@ package lua
 
 import (
 	"io"
+	"log"
 
 	nbattle "github.com/chompy/nbattle_go"
 	"github.com/chompy/nbattle_go/event"
@@ -18,6 +19,9 @@ func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, erro
 		return nil, err
 	}
 	luaCtx, err := loadLuaScript(ctx, scriptBytes)
+	if err != nil {
+		return nil, err
+	}
 	nameIf, err := luaCtx.CallFunc("Name")
 	if err != nil {
 		return nil, err
@@ -26,7 +30,6 @@ func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, erro
 	if !ok {
 		return nil, ErrUnexpectedLuaFuncReturn
 	}
-
 	return ctx.NewEffectDef(name, func() nbattle.Effect {
 		luaCtx, err := loadLuaScript(ctx, scriptBytes)
 		if err != nil {
@@ -36,7 +39,6 @@ func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, erro
 			luaCtx: luaCtx,
 		}
 	}), nil
-
 }
 
 func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext, error) {
@@ -51,37 +53,115 @@ func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext,
 }
 
 func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
-	if _, err := e.luaCtx.CallFunc("OnAdd",
-		combatantToLua(ctx.Ctx, ctx.Target),
-		objectToLua(ctx.Ctx, ctx.Source),
-		ctx.Potency,
-	); err != nil {
-		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
-	}
-}
-
-func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
-	if _, err := e.luaCtx.CallFunc("OnRemove",
-		combatantToLua(ctx.Ctx, ctx.Target),
-		objectToLua(ctx.Ctx, ctx.Source),
-	); err != nil {
+	if _, err := e.luaCtx.CallFunc("OnAdd", effectCtxToLua(ctx)); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
 }
 
-func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, event event.Event) {
-	if _, err := e.luaCtx.CallFunc("OnEvent",
-		eventToLua(ctx.Ctx, event),
-		combatantToLua(ctx.Ctx, ctx.Target),
-		objectToLua(ctx.Ctx, ctx.Source),
-	); err != nil {
-		logLuaFuncCallError(err, ctx.Def.GetName()+".OnEvent")
+func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
+	if _, err := e.luaCtx.CallFunc("OnRemove", effectCtxToLua(ctx)); err != nil {
+		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
 }
 
-func EffectContextToLua(ctx *nbattle.EffectCtx) map[string]any {
+func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
+	switch evt := evt.(type) {
+	case *event.Tick:
+		if _, err := e.luaCtx.CallFunc("OnTick", effectCtxToLua(ctx), map[string]any{"tick": evt.Tick}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+".OnTick")
+		}
+
+	case *event.CombatantUpdate:
+		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
+			break
+		}
+		if _, err := e.luaCtx.CallFunc("OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
+			"combatant": combatantToLua(ctx.Ctx, combatant),
+			"active":    evt.Active,
+		}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
+		}
+
+	case *event.CombatantStatBase:
+		funcName := "OnCombatantStatBase"
+		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+			"combatant": combatantToLua(ctx.Ctx, combatant),
+			"statDef":   statDefToLua(statDef),
+			"value":     evt.Value,
+			"setValue": func(value int) {
+				evt.Value = value
+			},
+		}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+		}
+
+	case *event.CombatantStatMod:
+		funcName := "OnCombatantStatMod"
+		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+			"combatant": combatantToLua(ctx.Ctx, combatant),
+			"statDef":   statDefToLua(statDef),
+			"value":     evt.ModValue,
+			"setValue": func(value int) {
+				evt.ModValue = value
+			},
+		}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+		}
+
+	case *event.CombatantEffect:
+		funcName := "OnCombatantEffect"
+		target, err := ctx.Ctx.GetCombatantByID(evt.TargetID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		effectDef, err := ctx.Ctx.GetEffectDefByID(evt.EffectDefID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		source := ctx.Ctx.GetObject(evt.SourceID)
+		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+			"target":  combatantToLua(ctx.Ctx, target),
+			"effect":  effectDef.GetName(),
+			"potency": evt.Potency,
+			"source":  objectToLua(ctx.Ctx, source),
+		}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+		}
+
+	default:
+		log.Printf("WARNING: Effect %s received unknown event type: %T", ctx.Def.GetName(), evt.Type())
+	}
+}
+
+func effectCtxToLua(effectCtx *nbattle.EffectCtx) map[string]any {
 	return map[string]any{
-		"target": combatantToLua(ctx.Ctx, ctx.Target),
-		"source": objectToLua(ctx.Ctx, ctx.Source),
+		"target":  combatantToLua(effectCtx.Ctx, effectCtx.Target),
+		"source":  objectToLua(effectCtx.Ctx, effectCtx.Source),
+		"effect":  effectCtx.Def.GetName(),
+		"potency": effectCtx.Potency,
 	}
 }

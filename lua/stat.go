@@ -42,6 +42,9 @@ func statToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 		"add": func(value float64) {
 			stat.AddBase(int(value))
 		},
+		"subtract": func(value float64) {
+			stat.SubBase(int(value))
+		},
 		"sub": func(value float64) {
 			stat.SubBase(int(value))
 		},

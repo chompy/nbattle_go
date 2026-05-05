@@ -2,12 +2,7 @@ function Name()
     return "attack"
 end
 
-function OnAdd(target, source)
-    target.getStat("hp").add(-1 * (source.getStat("str").get() - target.getStat("def").get()))
-end
-
-function OnRemove()
-end
-
-function OnEvent(event)
+function OnAdd(ctx)
+    ctx.target.getStat("hp").subtract(ctx.source.getStat("str").get() - ctx.target.getStat("def").get())
+    --ctx.target.removeEffect(ctx.effect)
 end

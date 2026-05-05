@@ -36,6 +36,10 @@ func (c *Context) GetObject(obj any) Object {
 		return obj
 	case int:
 		return c.GetObjectByID(obj)
+	case float32:
+		return c.GetObjectByID(int(obj))
+	case float64:
+		return c.GetObjectByID(int(obj))
 	case string:
 		statDef, _ := c.GetStatDefByName(obj)
 		if statDef != nil {

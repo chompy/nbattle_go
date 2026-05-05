@@ -2,19 +2,11 @@ function Name()
     return "defend"
 end
 
-function OnAdd(target, source)
-end
-
-function OnRemove()
-end
-
-function OnEvent(event, target, source)
-    if (event.type == COMBATANT_STAT_BASE) then
-        if (event.stat.getCombatant().id == target.id) then
-            local diff = target.getStat("hp").get() - event.value
-            if diff > 0 then
-                event.setValue(target.getStat("hp").get() - (diff / 2))
-            end
+function OnCombatantStatBase(ctx, evt)
+    if evt.statDef.name == "hp" and ctx.target.id == evt.combatant.id then
+        local diff = ctx.target.getStat("hp").get() - evt.value
+        if diff > 0 then
+            evt.setValue(ctx.target.getStat("hp").get() - (diff / 2))
         end
     end
 end
