@@ -1,15 +1,15 @@
 package event
 
 type CombatantFlag struct {
-	TargetID int
-	Flag     uint64
-	On       bool
+	CombatantID int
+	Flag        uint64
+	On          bool
 }
 
 func (e *CombatantFlag) Type() Type { return CombatantFlagEvent }
 
 func (e *CombatantFlag) Serialize() ([]byte, error) {
-	return serialize(e.Type(), e.TargetID, e.Flag, e.On)
+	return serialize(e.Type(), e.CombatantID, e.Flag, e.On)
 }
 
 func (e *CombatantFlag) Deserialize(data []byte) error {
@@ -33,7 +33,7 @@ func (e *CombatantFlag) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	e.TargetID = targetID
+	e.CombatantID = targetID
 	e.Flag = flag
 	e.On = on
 	return nil

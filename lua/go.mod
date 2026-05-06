@@ -8,7 +8,7 @@ replace github.com/chompy/nbattle_go/event => ../event
 
 require (
 	github.com/chompy/nbattle_go v0.0.0-20260504195119-7ff16033d4e8
-	github.com/chompy/nbattle_go/event v0.0.0-20260504195119-7ff16033d4e8
+	github.com/chompy/nbattle_go/event v0.0.0
 	github.com/rosbit/luago v0.5.2
 )
 

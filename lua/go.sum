@@ -1,7 +1,3 @@
-github.com/chompy/nbattle_go v0.0.0-20260504195119-7ff16033d4e8 h1:W0dW2t9lq3m8xl+u4CbhWLX6GCxfHe8Fv4r5/jNbC50=
-github.com/chompy/nbattle_go v0.0.0-20260504195119-7ff16033d4e8/go.mod h1:YW0kyuXDwTM7wvFhv8Q3p5DbCotRdHVyB58KhNKk66Q=
-github.com/chompy/nbattle_go/event v0.0.0-20260504195119-7ff16033d4e8 h1:4LoDGszNk3dcWtJjWAB89aoiKce9bNDNR786I67wTUc=
-github.com/chompy/nbattle_go/event v0.0.0-20260504195119-7ff16033d4e8/go.mod h1:QY31mkvR0wxCK32ZNSIbN/JDyxq7+/92s/JjRMl3R58=
 github.com/rosbit/go-embedding-utils v0.4.1 h1:vwxlGJEO1+fvcm7wVWe1zO0TS1DLktTUmopPa2Kwd2Q=
 github.com/rosbit/go-embedding-utils v0.4.1/go.mod h1:vN49YyUkB9OQI4t/6ofn0+kHYOrn/mAP1cqkzITBoEw=
 github.com/rosbit/luago v0.5.2 h1:QXTaBWE49xOrHmAlHEGMEVykDjxR7nnq9hUJuWv7x7o=

@@ -218,7 +218,6 @@ func (c *Context) EmitEvent(event event.Event) {
 	for _, combatant := range c.GetCombatants() {
 		combatant.HandleEffectEvent(event)
 	}
-
 }
 
 func (c *Context) HookEvents(hook event.Hook) {
@@ -269,12 +268,11 @@ func (c *Context) HandleEvent(evt event.Event) error {
 		target.SetEffect(evt.EffectDefID, evt.Potency, evt.SourceID)
 
 	case *event.CombatantFlag:
-		target, err := c.GetCombatantByID(evt.TargetID)
+		target, err := c.GetCombatantByID(evt.CombatantID)
 		if err != nil {
 			return err
 		}
 		target.SetFlag(evt.Flag, evt.On)
-
 	}
 	return nil
 }

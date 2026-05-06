@@ -142,7 +142,7 @@ func (c *Combatant) SetFlag(flag any, on bool) {
 	} else {
 		c.flags &^= flagValue
 	}
-	c.ctx.EmitEvent(&event.CombatantFlag{TargetID: c.GetID(), Flag: flagValue, On: on})
+	c.ctx.EmitEvent(&event.CombatantFlag{CombatantID: c.GetID(), Flag: flagValue, On: on})
 }
 
 func (c *Combatant) HasFlag(flag any) bool {

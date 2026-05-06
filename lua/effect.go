@@ -154,15 +154,15 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 
 	case *event.CombatantFlag:
 		funcName := "OnCombatantFlag"
-		target, err := ctx.Ctx.GetCombatantByID(evt.TargetID)
+		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
 		if err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
-			"target": combatantToLua(ctx.Ctx, target),
-			"flag":   evt.Flag,
-			"on":     evt.On,
+			"combatant": combatantToLua(ctx.Ctx, combatant),
+			"flag":      evt.Flag,
+			"on":        evt.On,
 		}); err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 		}
