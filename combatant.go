@@ -40,22 +40,26 @@ func (c *Combatant) SetActive(active bool) {
 	}
 }
 
-func (c *Combatant) GetStat(obj any) *Stat {
-	def, ok := c.ctx.GetObject(obj).(*StatDef)
+func (c *Combatant) GetStat(statDefObj any) (*Stat, error) {
+	statDefObj, err := c.ctx.GetObject(statDefObj)
+	if err != nil {
+		return nil, err
+	}
+	statDef, ok := statDefObj.(*StatDef)
 	if !ok {
-		return nil
+		return nil, ErrUnexpectedObjectType
 	}
 	if c.stats == nil {
 		c.stats = make([]*Stat, 0)
 	}
 	for _, stat := range c.stats {
-		if stat.GetDef().GetID() == def.GetID() {
-			return stat
+		if stat.GetDef().GetID() == statDef.GetID() {
+			return stat, nil
 		}
 	}
-	stat := &Stat{def, 0, nil}
+	stat := &Stat{statDef, 0, nil}
 	c.stats = append(c.stats, stat)
-	return stat
+	return stat, nil
 }
 
 func (c *Combatant) GetStats() []*Stat {
@@ -63,19 +67,21 @@ func (c *Combatant) GetStats() []*Stat {
 }
 
 func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) error {
-	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
-	if !ok {
-		return ErrObjectNotFound
+	effectDefObj, err := c.ctx.GetObject(effectDefObj)
+	if err != nil {
+		return err
 	}
-	source := c.ctx.GetObject(sourceObj)
-
+	effectDef, ok := effectDefObj.(*EffectDef)
+	if !ok {
+		return ErrUnexpectedObjectType
+	}
+	source, _ := c.ctx.GetObject(sourceObj)
 	if err := c.removeEffect(effectDef); err != nil {
 		return err
 	}
 	if potency <= 0 {
 		return nil
 	}
-
 	return c.addEffect(effectDef, potency, source)
 }
 
@@ -110,7 +116,11 @@ func (c *Combatant) removeEffect(effectDef *EffectDef) error {
 }
 
 func (c *Combatant) HasEffect(effectDefObj any) bool {
-	effectDef, ok := c.ctx.GetObject(effectDefObj).(*EffectDef)
+	effectDefObj, err := c.ctx.GetObject(effectDefObj)
+	if err != nil {
+		return false
+	}
+	effectDef, ok := effectDefObj.(*EffectDef)
 	if !ok {
 		return false
 	}

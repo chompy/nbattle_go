@@ -71,12 +71,11 @@ func (s *Stat) Reset() {
 	s.mods = make(map[int]int)
 }
 
-func (s *Stat) SetMod(source any, value int) {
+func (s *Stat) SetMod(source any, value int) error {
 	statDef := s.GetDef()
-
-	sourceObj := statDef.ctx.GetObject(source)
-	if sourceObj == nil {
-		return
+	sourceObj, err := statDef.ctx.GetObject(source)
+	if err != nil {
+		return err
 	}
 
 	combatant, err := s.def.ctx.GetCombatantWithStat(s)
@@ -93,4 +92,5 @@ func (s *Stat) SetMod(source any, value int) {
 	if value == 0 {
 		delete(s.mods, sourceObj.GetID())
 	}
+	return nil
 }

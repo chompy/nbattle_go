@@ -17,7 +17,12 @@ func combatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 		"id":   combatant.GetID(),
 		"type": combatant.GetType(),
 		"getStat": func(statDefName string) map[string]any {
-			return statToLua(ctx, combatant.GetStat(statDefName))
+			stat, err := combatant.GetStat(statDefName)
+			if err != nil {
+				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.getStat", combatant.GetID()))
+				return errorToLua(err)
+			}
+			return statToLua(ctx, stat)
 		},
 		"setEffect": func(effectDef any, potency int, sourceObj any) {
 			if err := combatant.SetEffect(effectDef, potency, sourceObj); err != nil {

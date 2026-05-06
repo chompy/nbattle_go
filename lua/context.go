@@ -2,19 +2,20 @@ package lua
 
 import (
 	"log"
+	"strings"
 
 	nbattle "github.com/chompy/nbattle_go"
 )
 
 func luaGlobals(ctx *nbattle.Context) map[string]any {
-	globals := map[string]any{
-		"STAT_DEF":   nbattle.ObjectTypeStatDef,
-		"EFFECT_DEF": nbattle.ObjectTypeEffectDef,
-		"COMBATANT":  nbattle.ObjectTypeCombatant,
-		"ctx":        contextToLua(ctx),
+
+	globals := make(map[string]any)
+	globals["ctx"] = contextToLua(ctx)
+	for _, statDef := range ctx.GetStatDefs() {
+		globals["STAT_"+strings.ToUpper(statDef.GetName())] = statDefToLua(statDef)
 	}
 	for name, value := range ctx.GetFlags() {
-		globals["FLAG_"+name] = value
+		globals["FLAG_"+strings.ToUpper(name)] = value
 	}
 	return globals
 }
@@ -70,9 +71,9 @@ func objectFromLua(ctx *nbattle.Context, object any) (nbattle.Object, error) {
 	if err != nil {
 		return nil, err
 	}
-	obj := ctx.GetObjectByID(id)
-	if obj == nil {
-		return nil, nbattle.ErrObjectNotFound
+	obj, err := ctx.GetObjectByID(id)
+	if err != nil {
+		return nil, err
 	}
 	return obj, nil
 }

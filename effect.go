@@ -28,6 +28,25 @@ type EffectCtx struct {
 	Source  Object
 }
 
+func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
+	triggerDef, err := e.Ctx.GetObject(triggerDefObj)
+	if err != nil {
+		return err
+	}
+	sourceID := 0
+	if e.Source != nil {
+		sourceID = e.Source.GetID()
+	}
+	e.Ctx.EmitEvent(&event.Trigger{
+		TriggerDefID:   triggerDef.GetID(),
+		EffectDefID:    e.Def.GetID(),
+		EffectTargetID: e.Target.GetID(),
+		EffectSourceID: sourceID,
+		EffectPotency:  e.Potency,
+	})
+	return nil
+}
+
 type Effect interface {
 	OnAdd(ctx *EffectCtx)
 	OnRemove(ctx *EffectCtx)

@@ -10,6 +10,7 @@ const (
 	CombatantStatBaseEvent
 	CombatantStatModEvent
 	CombatantEffectEvent
+	TriggerEvent
 )
 
 type Event interface {
