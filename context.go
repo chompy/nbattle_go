@@ -10,10 +10,12 @@ type Context struct {
 	objects     []Object
 	eventHooks  []event.Hook
 	effectStack []Effect
+	flags       map[string]uint64
+	flagCounter uint64
 }
 
 func New() *Context {
-	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0), make([]Effect, 0)}
+	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0), make([]Effect, 0), make(map[string]uint64), 1}
 }
 
 func (c *Context) newObject() BaseObject {
@@ -143,7 +145,7 @@ func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
 }
 
 func (c *Context) NewCombatant() *Combatant {
-	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0)}
+	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 	c.objects = append(c.objects, combatant)
 	combatant.SetActive(true)
 	return combatant
@@ -152,7 +154,7 @@ func (c *Context) NewCombatant() *Combatant {
 func (c *Context) newCombatantWithID(ID int) *Combatant {
 	combatant, err := c.GetCombatantByID(ID)
 	if err == ErrObjectNotFound {
-		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0)}
+		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 		c.objects = append(c.objects, combatant)
 		return combatant
 	}
@@ -192,6 +194,21 @@ func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
 		}
 	}
 	return nil, ErrObjectNotFound
+}
+
+func (c *Context) NewFlag(name string) uint64 {
+	flag := c.flagCounter
+	c.flags[name] = flag
+	c.flagCounter <<= 1
+	return flag
+}
+
+func (c *Context) GetFlags() map[string]uint64 {
+	return c.flags
+}
+
+func (c *Context) GetFlagByName(name string) uint64 {
+	return c.flags[name]
 }
 
 func (c *Context) EmitEvent(event event.Event) {
@@ -250,6 +267,13 @@ func (c *Context) HandleEvent(evt event.Event) error {
 			return err
 		}
 		target.SetEffect(evt.EffectDefID, evt.Potency, evt.SourceID)
+
+	case *event.CombatantFlag:
+		target, err := c.GetCombatantByID(evt.TargetID)
+		if err != nil {
+			return err
+		}
+		target.SetFlag(evt.Flag, evt.On)
 
 	}
 	return nil

@@ -152,6 +152,21 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 		}
 
+	case *event.CombatantFlag:
+		funcName := "OnCombatantFlag"
+		target, err := ctx.Ctx.GetCombatantByID(evt.TargetID)
+		if err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			break
+		}
+		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+			"target": combatantToLua(ctx.Ctx, target),
+			"flag":   evt.Flag,
+			"on":     evt.On,
+		}); err != nil {
+			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+		}
+
 	default:
 		log.Printf("WARNING: Effect %s received unknown event type: %T", ctx.Def.GetName(), evt.Type())
 	}

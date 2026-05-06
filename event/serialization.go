@@ -10,7 +10,7 @@ func serialize(data ...any) ([]byte, error) {
 	var err error
 	for _, v := range data {
 		switch v := v.(type) {
-		case int, float32, float64, int32, uint32, int16, uint16, int8, uint8:
+		case int, float32, float64, int32, uint32, int16, uint16, int8, uint8, uint64:
 			out, err = binary.Append(out, binary.BigEndian, v)
 			if err != nil {
 				return nil, err
@@ -68,6 +68,18 @@ func (d *deserializer) ReadBool() (bool, error) {
 
 func (d *deserializer) ReadInt() (int, error) {
 	out := int(0)
+	data, err := d.ReadBytes(binary.Size(out))
+	if err != nil {
+		return 0, err
+	}
+	if _, err := binary.Decode(data, binary.BigEndian, &out); err != nil {
+		return 0, err
+	}
+	return out, nil
+}
+
+func (d *deserializer) ReadUint64() (uint64, error) {
+	out := uint64(0)
 	data, err := d.ReadBytes(binary.Size(out))
 	if err != nil {
 		return 0, err

@@ -7,12 +7,16 @@ import (
 )
 
 func luaGlobals(ctx *nbattle.Context) map[string]any {
-	return map[string]any{
+	globals := map[string]any{
 		"STAT_DEF":   nbattle.ObjectTypeStatDef,
 		"EFFECT_DEF": nbattle.ObjectTypeEffectDef,
 		"COMBATANT":  nbattle.ObjectTypeCombatant,
 		"ctx":        contextToLua(ctx),
 	}
+	for name, value := range ctx.GetFlags() {
+		globals["FLAG_"+name] = value
+	}
+	return globals
 }
 
 func contextToLua(ctx *nbattle.Context) map[string]any {

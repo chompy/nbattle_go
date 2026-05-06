@@ -30,5 +30,7 @@ func combatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.removeEffect", combatant.GetID()))
 			}
 		},
+		"setFlag": combatant.SetFlag,
+		"hasFlag": combatant.HasFlag,
 	}
 }

@@ -16,6 +16,7 @@ type Combatant struct {
 	active  bool
 	stats   []*Stat
 	effects []*CombatantEffect
+	flags   uint64
 }
 
 func (c *Combatant) GetType() ObjectType {
@@ -116,6 +117,57 @@ func (c *Combatant) HasEffect(effectDefObj any) bool {
 	return slices.ContainsFunc(c.effects, func(e *CombatantEffect) bool {
 		return e.EffectCtx.Def.GetID() == effectDef.GetID()
 	})
+}
+
+func (c *Combatant) SetFlag(flag any, on bool) {
+	var flagValue uint64
+	switch f := flag.(type) {
+	case string:
+		flagValue = c.ctx.GetFlagByName(f)
+	case uint64:
+		flagValue = f
+	case int64:
+		flagValue = uint64(f)
+	case int:
+		flagValue = uint64(f)
+	case float64:
+		flagValue = uint64(f)
+	case float32:
+		flagValue = uint64(f)
+	default:
+		return
+	}
+	if on {
+		c.flags |= flagValue
+	} else {
+		c.flags &^= flagValue
+	}
+	c.ctx.EmitEvent(&event.CombatantFlag{TargetID: c.GetID(), Flag: flagValue, On: on})
+}
+
+func (c *Combatant) HasFlag(flag any) bool {
+	var flagValue uint64
+	switch f := flag.(type) {
+	case string:
+		flagValue = c.ctx.GetFlagByName(f)
+	case uint64:
+		flagValue = f
+	case int64:
+		flagValue = uint64(f)
+	case int:
+		flagValue = uint64(f)
+	case float64:
+		flagValue = uint64(f)
+	case float32:
+		flagValue = uint64(f)
+	default:
+		return false
+	}
+	return (c.flags & flagValue) != 0
+}
+
+func (c *Combatant) GetFlags() uint64 {
+	return c.flags
 }
 
 func (c *Combatant) HandleEffectEvent(event event.Event) error {
