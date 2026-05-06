@@ -80,6 +80,7 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 		if _, err := e.luaCtx.CallFunc("OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
 			"active":    evt.Active,
+			"flags":     evt.Flags,
 		}); err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
 		}
@@ -148,21 +149,6 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 			"effect":  effectDef.GetName(),
 			"potency": evt.Potency,
 			"source":  objectToLua(ctx.Ctx, source),
-		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
-		}
-
-	case *event.CombatantFlag:
-		funcName := "OnCombatantFlag"
-		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
-		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
-			break
-		}
-		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
-			"combatant": combatantToLua(ctx.Ctx, combatant),
-			"flag":      evt.Flag,
-			"on":        evt.On,
 		}); err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 		}

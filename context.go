@@ -241,6 +241,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 			return err
 		}
 		combatant.SetActive(evt.Active)
+		combatant.flags = evt.Flags
 		return nil
 
 	case *event.CombatantStatBase:
@@ -267,12 +268,6 @@ func (c *Context) HandleEvent(evt event.Event) error {
 		}
 		target.SetEffect(evt.EffectDefID, evt.Potency, evt.SourceID)
 
-	case *event.CombatantFlag:
-		target, err := c.GetCombatantByID(evt.CombatantID)
-		if err != nil {
-			return err
-		}
-		target.SetFlag(evt.Flag, evt.On)
 	}
 	return nil
 }

@@ -36,7 +36,7 @@ func (c *Combatant) IsActive() bool {
 func (c *Combatant) SetActive(active bool) {
 	if active != c.active {
 		c.active = active
-		c.ctx.EmitEvent(&event.CombatantUpdate{CombatantID: c.GetID(), Active: c.active})
+		c.emitUpdateEvent()
 	}
 }
 
@@ -142,7 +142,7 @@ func (c *Combatant) SetFlag(flag any, on bool) {
 	} else {
 		c.flags &^= flagValue
 	}
-	c.ctx.EmitEvent(&event.CombatantFlag{CombatantID: c.GetID(), Flag: flagValue, On: on})
+	c.emitUpdateEvent()
 }
 
 func (c *Combatant) HasFlag(flag any) bool {
@@ -179,4 +179,8 @@ func (c *Combatant) HandleEffectEvent(event event.Event) error {
 		}
 	}
 	return nil
+}
+
+func (c *Combatant) emitUpdateEvent() {
+	c.ctx.EmitEvent(&event.CombatantUpdate{CombatantID: c.GetID(), Active: c.active, Flags: c.flags})
 }
