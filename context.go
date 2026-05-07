@@ -4,6 +4,7 @@ import (
 	"github.com/chompy/nbattle_go/event"
 )
 
+// Context is the main object of NBattle.
 type Context struct {
 	idCounter   int
 	tick        int
@@ -14,6 +15,7 @@ type Context struct {
 	flagCounter uint64
 }
 
+// New creates a new NBattle context.
 func New() *Context {
 	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0), make([]Effect, 0), make(map[string]uint64), 1}
 }
@@ -23,6 +25,7 @@ func (c *Context) newObject() BaseObject {
 	return BaseObject{c.idCounter, c}
 }
 
+// GetObjectByID retrieves an object by its ID.
 func (c *Context) GetObjectByID(ID int) (Object, error) {
 	for _, obj := range c.objects {
 		if obj.GetID() == ID {
@@ -32,6 +35,7 @@ func (c *Context) GetObjectByID(ID int) (Object, error) {
 	return nil, ErrObjectNotFound
 }
 
+// GetObject retrieves an object from an unknown type value (ID, name, or map containing ID).
 func (c *Context) GetObject(obj any) (Object, error) {
 	switch obj := obj.(type) {
 	case Object:
@@ -54,6 +58,7 @@ func (c *Context) GetObject(obj any) (Object, error) {
 	return nil, ErrUnexpectedObjectType
 }
 
+// GetObjectByName retrieves an object by its name.
 func (c *Context) GetObjectByName(name string) (Object, error) {
 	for _, object := range c.objects {
 		switch object := object.(type) {
@@ -74,22 +79,14 @@ func (c *Context) GetObjectByName(name string) (Object, error) {
 	return nil, ErrObjectNotFound
 }
 
-func (c *Context) Tick() int {
-	c.tick++
-	c.EmitEvent(&event.Tick{Tick: c.tick})
-	return c.tick
-}
-
-func (c *Context) GetTick() int {
-	return c.tick
-}
-
+// NewStatDef creates a new stat definition.
 func (c *Context) NewStatDef(name string, min, max int) *StatDef {
 	stafDef := &StatDef{c.newObject(), name, min, max}
 	c.objects = append(c.objects, stafDef)
 	return stafDef
 }
 
+// GetStatDefs retrieves all stat definitions.
 func (c *Context) GetStatDefs() []*StatDef {
 	out := make([]*StatDef, 0)
 	for _, object := range c.objects {
@@ -101,6 +98,7 @@ func (c *Context) GetStatDefs() []*StatDef {
 	return out
 }
 
+// GetStatDefByID retrieves a stat definition by its ID.
 func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {
 	statDefObj, err := c.GetObjectByID(ID)
 	if err != nil {
@@ -113,6 +111,7 @@ func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {
 	return statDef, nil
 }
 
+// GetStatDefByName retrieves a stat definition by its name.
 func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
 	for _, def := range c.objects {
 		statDef, ok := def.(*StatDef)
@@ -126,12 +125,14 @@ func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
 	return nil, ErrObjectNotFound
 }
 
+// NewEffectDef creates a new effect definition.
 func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), name, create}
 	c.objects = append(c.objects, effectDef)
 	return effectDef
 }
 
+// GetEffectDefByID retrieves an effect definition by its ID.
 func (c *Context) GetEffectDefByID(ID int) (*EffectDef, error) {
 	effectDefObj, err := c.GetObjectByID(ID)
 	if err != nil {
@@ -144,6 +145,7 @@ func (c *Context) GetEffectDefByID(ID int) (*EffectDef, error) {
 	return effectDef, nil
 }
 
+// GetEffectDefByName retrieves an effect definition by its name.
 func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
 	for _, def := range c.objects {
 		effectDef, ok := def.(*EffectDef)
@@ -157,12 +159,14 @@ func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
 	return nil, ErrObjectNotFound
 }
 
+// NewTriggerDef creates a new trigger definition.
 func (c *Context) NewTriggerDef(name string) *TriggerDef {
 	triggerDef := &TriggerDef{c.newObject(), name}
 	c.objects = append(c.objects, triggerDef)
 	return triggerDef
 }
 
+// GetTriggerDefByID retrieves a trigger definition by its ID.
 func (c *Context) GetTriggerDefByID(ID int) (*TriggerDef, error) {
 	triggerDefObj, err := c.GetObjectByID(ID)
 	if err != nil {
@@ -175,6 +179,7 @@ func (c *Context) GetTriggerDefByID(ID int) (*TriggerDef, error) {
 	return triggerDef, nil
 }
 
+// GetTriggerDefByName retrieves a trigger definition by its name.
 func (c *Context) GetTriggerDefByName(name string) (*TriggerDef, error) {
 	for _, def := range c.objects {
 		triggerDef, ok := def.(*TriggerDef)
@@ -188,6 +193,7 @@ func (c *Context) GetTriggerDefByName(name string) (*TriggerDef, error) {
 	return nil, ErrObjectNotFound
 }
 
+// NewCombatant creates a new combatant.
 func (c *Context) NewCombatant() *Combatant {
 	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 	c.objects = append(c.objects, combatant)
@@ -205,6 +211,7 @@ func (c *Context) newCombatantWithID(ID int) *Combatant {
 	return combatant
 }
 
+// GetCombatants retrieves all combatants.
 func (c *Context) GetCombatants() []*Combatant {
 	out := make([]*Combatant, 0)
 	for _, object := range c.objects {
@@ -216,6 +223,7 @@ func (c *Context) GetCombatants() []*Combatant {
 	return out
 }
 
+// GetCombatantByID retrieves a combatant by its ID.
 func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
 	combatantObj, err := c.GetObjectByID(ID)
 	if err != nil {
@@ -228,6 +236,7 @@ func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
 	return combatant, nil
 }
 
+// GetCombatantWithStat retrieves a combatant by a stat that has been assigned to it.
 func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
 	combatants := c.GetCombatants()
 	for _, combatant := range combatants {
@@ -240,6 +249,7 @@ func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
 	return nil, ErrObjectNotFound
 }
 
+// NewFlag creates a new flag.
 func (c *Context) NewFlag(name string) uint64 {
 	flag := c.flagCounter
 	c.flags[name] = flag
@@ -247,14 +257,29 @@ func (c *Context) NewFlag(name string) uint64 {
 	return flag
 }
 
+// GetFlags retrieves all flags.
 func (c *Context) GetFlags() map[string]uint64 {
 	return c.flags
 }
 
+// GetFlagByName retrieves a flag by its name.
 func (c *Context) GetFlagByName(name string) uint64 {
 	return c.flags[name]
 }
 
+// Tick advances the tick counter and emit tick event.
+func (c *Context) Tick() int {
+	c.tick++
+	c.EmitEvent(&event.Tick{Tick: c.tick})
+	return c.tick
+}
+
+// GetTick retrieves the current tick.
+func (c *Context) GetTick() int {
+	return c.tick
+}
+
+// EmitEvent sends an event to all hooks and active combatant effects.
 func (c *Context) EmitEvent(event event.Event) error {
 	for _, hook := range c.eventHooks {
 		if err := hook(event); err != nil {
@@ -269,10 +294,12 @@ func (c *Context) EmitEvent(event event.Event) error {
 	return nil
 }
 
+// HookEvents adds a new event hook.
 func (c *Context) HookEvents(hook event.Hook) {
 	c.eventHooks = append(c.eventHooks, hook)
 }
 
+// HandleEvent processes an event from another context.
 func (c *Context) HandleEvent(evt event.Event) error {
 	switch evt := evt.(type) {
 	case *event.Tick:

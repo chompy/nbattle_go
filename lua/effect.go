@@ -9,10 +9,11 @@ import (
 	luago "github.com/rosbit/luago"
 )
 
-type LuaEffect struct {
+type luaEffect struct {
 	luaCtx *luago.LuaContext
 }
 
+// NewEffect creates a new EffectDef from a Lua script.
 func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, error) {
 	scriptBytes, err := io.ReadAll(script)
 	if err != nil {
@@ -35,7 +36,7 @@ func NewEffect(ctx *nbattle.Context, script io.Reader) (*nbattle.EffectDef, erro
 		if err != nil {
 			return nil
 		}
-		return &LuaEffect{
+		return &luaEffect{
 			luaCtx: luaCtx,
 		}
 	}), nil
@@ -52,19 +53,19 @@ func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext,
 	return luaCtx, nil
 }
 
-func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
+func (e *luaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnAdd", effectCtxToLua(ctx)); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
 	}
 }
 
-func (e *LuaEffect) OnRemove(ctx *nbattle.EffectCtx) {
+func (e *luaEffect) OnRemove(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnRemove", effectCtxToLua(ctx)); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
 }
 
-func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
+func (e *luaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 	switch evt := evt.(type) {
 	case *event.Tick:
 		if _, err := e.luaCtx.CallFunc("OnTick", effectCtxToLua(ctx), map[string]any{"tick": evt.Tick}); err != nil {
@@ -80,6 +81,7 @@ func (e *LuaEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 		if _, err := e.luaCtx.CallFunc("OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
 			"active":    evt.Active,
+			"flags":     evt.Flags,
 		}); err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
 		}

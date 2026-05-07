@@ -11,16 +11,19 @@ const (
 	ObjectTypeError
 )
 
+// Object is an interface for all objects managed by NBattle.
 type Object interface {
-	GetID() int
-	GetType() ObjectType
+	GetID() int          // Get the object's unique ID.
+	GetType() ObjectType // Get the object's type.
 }
 
+// BaseObject is a base struct for all objects.
 type BaseObject struct {
 	id  int
 	ctx *Context
 }
 
+// Retrieve the object ID.
 func (o *BaseObject) GetID() int {
 	return o.id
 }

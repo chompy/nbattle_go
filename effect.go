@@ -6,6 +6,8 @@ import (
 	"github.com/chompy/nbattle_go/event"
 )
 
+// EffectDef is a definition of an effect.
+// An effect can be applied to combatants and used to dynamically alter the combatant's stats.
 type EffectDef struct {
 	BaseObject
 	name string
@@ -20,6 +22,7 @@ func (d *EffectDef) GetName() string {
 	return d.name
 }
 
+// EffectCtx is the context for an effect that has been applied to a specific combatant.
 type EffectCtx struct {
 	Ctx     *Context
 	Def     *EffectDef
@@ -28,6 +31,7 @@ type EffectCtx struct {
 	Source  Object
 }
 
+// EmitTrigger emits a trigger event for the given trigger definition.
 func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
 	triggerDefObj, err := e.Ctx.GetObject(triggerDefObj)
 	if err != nil {
@@ -51,10 +55,11 @@ func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
 	return nil
 }
 
+// Effect is an interface for effects.
 type Effect interface {
-	OnAdd(ctx *EffectCtx)
-	OnRemove(ctx *EffectCtx)
-	OnEvent(ctx *EffectCtx, event event.Event)
+	OnAdd(ctx *EffectCtx)                      // OnAdd is called when the effect is first applied to a combatant.
+	OnRemove(ctx *EffectCtx)                   // OnRemove is called when the effect is removed from a combatant.
+	OnEvent(ctx *EffectCtx, event event.Event) // OnEvent is called whenever an outside event is emitted.
 }
 
 func (c *Context) addEffectToStack(effect Effect) {

@@ -2,6 +2,7 @@ package nbattle
 
 import "github.com/chompy/nbattle_go/event"
 
+// TriggerDef is a definition of a custom event that can be triggered by an effect.
 type TriggerDef struct {
 	BaseObject
 	name string
@@ -15,6 +16,7 @@ func (d *TriggerDef) GetName() string {
 	return d.name
 }
 
+// EmitEvent emits a trigger event.
 func (d *TriggerDef) EmitEvent(effectCtx *EffectCtx) {
 	sourceID := 0
 	if effectCtx.Source != nil {

@@ -6,11 +6,13 @@ import (
 	"github.com/chompy/nbattle_go/event"
 )
 
+// CombatantEffect pairs an effect instance to an effect context.
 type CombatantEffect struct {
 	Effect    Effect
 	EffectCtx *EffectCtx
 }
 
+// Combatant is an entity that can interact with other combatants.
 type Combatant struct {
 	BaseObject
 	active  bool
@@ -23,16 +25,19 @@ func (c *Combatant) GetType() ObjectType {
 	return ObjectTypeCombatant
 }
 
+// Reset resets the combatant's stats to their base values.
 func (c *Combatant) Reset() {
 	for _, stat := range c.stats {
 		stat.Reset()
 	}
 }
 
+// IsActive returns true if the combatant is active.
 func (c *Combatant) IsActive() bool {
 	return c.active
 }
 
+// SetActive sets the combatant's active state.
 func (c *Combatant) SetActive(active bool) {
 	if active != c.active {
 		c.active = active
@@ -40,6 +45,7 @@ func (c *Combatant) SetActive(active bool) {
 	}
 }
 
+// GetStat retrieves the combatant's stat from a stat definition object.
 func (c *Combatant) GetStat(statDefObj any) (*Stat, error) {
 	statDefObj, err := c.ctx.GetObject(statDefObj)
 	if err != nil {
@@ -62,10 +68,13 @@ func (c *Combatant) GetStat(statDefObj any) (*Stat, error) {
 	return stat, nil
 }
 
+// GetStats retrieves all the combatant's stats.
 func (c *Combatant) GetStats() []*Stat {
 	return c.stats
 }
 
+// SetEffect adds an effect to the combatant. Potency is the power of the effect.
+// A potency of zero removes the effect.
 func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) error {
 	effectDefObj, err := c.ctx.GetObject(effectDefObj)
 	if err != nil {
@@ -115,6 +124,7 @@ func (c *Combatant) removeEffect(effectDef *EffectDef) error {
 	return nil
 }
 
+// HasEffect returns true if the combatant has the given effect.
 func (c *Combatant) HasEffect(effectDefObj any) bool {
 	effectDefObj, err := c.ctx.GetObject(effectDefObj)
 	if err != nil {
@@ -129,6 +139,7 @@ func (c *Combatant) HasEffect(effectDefObj any) bool {
 	})
 }
 
+// SetFlag sets the given flag to true or false.
 func (c *Combatant) SetFlag(flag any, on bool) {
 	var flagValue uint64
 	switch f := flag.(type) {
@@ -155,6 +166,7 @@ func (c *Combatant) SetFlag(flag any, on bool) {
 	c.emitUpdateEvent()
 }
 
+// HasFlag returns true if the given flag is set.
 func (c *Combatant) HasFlag(flag any) bool {
 	var flagValue uint64
 	switch f := flag.(type) {
@@ -176,10 +188,12 @@ func (c *Combatant) HasFlag(flag any) bool {
 	return (c.flags & flagValue) != 0
 }
 
+// GetFlags returns the current flags value.
 func (c *Combatant) GetFlags() uint64 {
 	return c.flags
 }
 
+// HandleEffectEvent sends the given event to all the effects of this combatant.
 func (c *Combatant) HandleEffectEvent(event event.Event) error {
 	for _, effect := range c.effects {
 		if !c.ctx.isEffectInStack(effect.Effect) {

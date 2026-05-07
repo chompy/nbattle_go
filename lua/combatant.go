@@ -16,8 +16,8 @@ func combatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[stri
 	return map[string]any{
 		"id":   combatant.GetID(),
 		"type": combatant.GetType(),
-		"getStat": func(statDefName string) map[string]any {
-			stat, err := combatant.GetStat(statDefName)
+		"getStat": func(statDef any) map[string]any {
+			stat, err := combatant.GetStat(statDef)
 			if err != nil {
 				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.getStat", combatant.GetID()))
 				return errorToLua(err)
