@@ -13,7 +13,7 @@ func (e *Trigger) Type() Type {
 }
 
 func (e *Trigger) Serialize() ([]byte, error) {
-	return serialize(TickEvent, e.TriggerDefID, e.EffectDefID, e.EffectTargetID, e.EffectSourceID, e.EffectPotency)
+	return serialize(TriggerEvent, e.TriggerDefID, e.EffectDefID, e.EffectTargetID, e.EffectSourceID, e.EffectPotency)
 }
 
 func (e *Trigger) Deserialize(data []byte) error {

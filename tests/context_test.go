@@ -21,21 +21,38 @@ func TestHandleEvent(t *testing.T) {
 	srcCtx.HookEvents(recCtx.HandleEvent)
 
 	cmbt := srcCtx.NewCombatant()
-	cmbt.GetStat("hp").SetBase(30)
-	cmbt.GetStat("max_hp").SetBase(30)
+	hpStat, err := cmbt.GetStat("hp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hpStat.SetBase(30)
+	maxHpStat, err := cmbt.GetStat("max_hp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	maxHpStat.SetBase(30)
 
-	recCmbt, _ := recCtx.GetCombatantByID(cmbt.GetID())
+	recCmbt, err := recCtx.GetCombatantByID(cmbt.GetID())
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if cmbt.GetID() != recCmbt.GetID() {
 		t.Fatal("receiving combatant id does not match source")
 	}
 
-	if cmbt.GetStat("hp").GetValue() != recCmbt.GetStat("hp").GetValue() {
+	srcHp, _ := cmbt.GetStat("hp")
+	recHp, _ := recCmbt.GetStat("hp")
+
+	if srcHp.GetValue() != recHp.GetValue() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 
-	cmbt.GetStat("hp").AddBase(-5)
-	if cmbt.GetStat("hp").GetValue() != recCmbt.GetStat("hp").GetValue() {
+	hpStat, _ = cmbt.GetStat("hp")
+	hpStat.AddBase(-5)
+	srcHp, _ = cmbt.GetStat("hp")
+	recHp, _ = recCmbt.GetStat("hp")
+	if srcHp.GetValue() != recHp.GetValue() {
 		t.Fatal("receiving combatant hp does not match source")
 	}
 

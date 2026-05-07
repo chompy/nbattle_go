@@ -30,8 +30,31 @@ func contextToLua(ctx *nbattle.Context) map[string]any {
 			}
 			return out
 		},
-		"getObject": func(obj any) {
-			objectToLua(ctx, obj)
+		"getObject": func(obj any) map[string]any {
+			obj, err := ctx.GetObject(obj)
+			if err != nil {
+				return errorToLua(err)
+			}
+			switch o := obj.(type) {
+			case *nbattle.StatDef:
+				return statDefToLua(o)
+			case *nbattle.EffectDef:
+				return map[string]any{
+					"id":   o.GetID(),
+					"type": o.GetType(),
+					"name": o.GetName(),
+				}
+			case *nbattle.TriggerDef:
+				return map[string]any{
+					"id":   o.GetID(),
+					"type": o.GetType(),
+					"name": o.GetName(),
+				}
+			case *nbattle.Combatant:
+				return combatantToLua(ctx, o)
+			default:
+				return errorToLua(nbattle.ErrUnexpectedObjectType)
+			}
 		},
 	}
 }

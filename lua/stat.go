@@ -49,7 +49,10 @@ func statToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 			stat.SubBase(int(value))
 		},
 		"getCombatant": func() map[string]any {
-			combatant, _ := ctx.GetCombatantWithStat(stat)
+			combatant, err := ctx.GetCombatantWithStat(stat)
+			if err != nil {
+				return errorToLua(err)
+			}
 			return combatantToLua(ctx, combatant)
 		},
 	}

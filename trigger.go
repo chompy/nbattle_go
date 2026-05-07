@@ -8,7 +8,7 @@ type TriggerDef struct {
 }
 
 func (d *TriggerDef) GetType() ObjectType {
-	return ObjectTypeEffectDef
+	return ObjectTypeTriggerDef
 }
 
 func (d *TriggerDef) GetName() string {

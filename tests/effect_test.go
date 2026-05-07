@@ -12,16 +12,19 @@ type TestEffect struct {
 }
 
 func (e *TestEffect) OnAdd(ctx *nbattle.EffectCtx) {
-	ctx.Target.GetStat(e.hpStat).SetBase(29)
+	stat, _ := ctx.Target.GetStat(e.hpStat)
+	stat.SetBase(29)
 }
 
 func (e *TestEffect) OnRemove(ctx *nbattle.EffectCtx) {
-	ctx.Target.GetStat(e.hpStat).SetBase(31)
+	stat, _ := ctx.Target.GetStat(e.hpStat)
+	stat.SetBase(31)
 }
 
 func (e *TestEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
 	if evt.Type() == event.TickEvent {
-		ctx.Target.GetStat(e.hpStat).AddBase(-1)
+		stat, _ := ctx.Target.GetStat(e.hpStat)
+		stat.AddBase(-1)
 	}
 }
 
@@ -35,31 +38,51 @@ func TestCombatantEffect(t *testing.T) {
 	})
 
 	cmbt := ctx.NewCombatant()
-	cmbt.GetStat(statDefHP).SetBase(15)
+	hpStat, err := cmbt.GetStat(statDefHP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hpStat.SetBase(15)
 
 	srcCmbt := ctx.NewCombatant()
 
 	cmbt.SetEffect(effectDefTest, 1, srcCmbt)
 
-	if cmbt.GetStat(statDefHP).GetValue() != 29 {
+	hpStat, err = cmbt.GetStat(statDefHP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hpStat.GetValue() != 29 {
 		t.Fatal("expected effect to set combatant hp to 29 on add")
 	}
 
 	ctx.Tick()
 
-	if cmbt.GetStat(statDefHP).GetValue() != 28 {
+	hpStat, err = cmbt.GetStat(statDefHP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hpStat.GetValue() != 28 {
 		t.Fatal("expected effect reduce combatant hp by 1 on tick")
 	}
 
 	ctx.Tick()
 
-	if cmbt.GetStat(statDefHP).GetValue() != 27 {
+	hpStat, err = cmbt.GetStat(statDefHP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hpStat.GetValue() != 27 {
 		t.Fatal("expected effect reduce combatant hp by 1 on tick")
 	}
 
 	cmbt.SetEffect(effectDefTest, 0, nil)
 
-	if cmbt.GetStat(statDefHP).GetValue() != 31 {
+	hpStat, err = cmbt.GetStat(statDefHP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hpStat.GetValue() != 31 {
 		t.Fatal("expected effect to set combatant hp to 31 on removal")
 	}
 

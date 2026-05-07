@@ -54,7 +54,7 @@ func loadLuaScript(ctx *nbattle.Context, scriptBytes []byte) (*luago.LuaContext,
 
 func (e *LuaEffect) OnAdd(ctx *nbattle.EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnAdd", effectCtxToLua(ctx)); err != nil {
-		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
+		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
 	}
 }
 

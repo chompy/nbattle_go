@@ -29,9 +29,13 @@ type EffectCtx struct {
 }
 
 func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
-	triggerDef, err := e.Ctx.GetObject(triggerDefObj)
+	triggerDefObj, err := e.Ctx.GetObject(triggerDefObj)
 	if err != nil {
 		return err
+	}
+	triggerDef, ok := triggerDefObj.(*TriggerDef)
+	if !ok {
+		return ErrUnexpectedObjectType
 	}
 	sourceID := 0
 	if e.Source != nil {

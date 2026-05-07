@@ -31,7 +31,10 @@ func TestStatBase(t *testing.T) {
 	ctx := nbattle.New()
 	strDef := ctx.NewStatDef("str", 0, 99)
 	combatant := ctx.NewCombatant()
-	strStat := combatant.GetStat(strDef)
+	strStat, err := combatant.GetStat(strDef)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	strStat.SetBase(30)
 	if strStat.GetBase() != 30 {
@@ -81,7 +84,10 @@ func TestStatMod(t *testing.T) {
 	combatant := ctx.NewCombatant()
 	enemy := ctx.NewCombatant()
 	ally := ctx.NewCombatant()
-	strStat := combatant.GetStat(strDef)
+	strStat, err := combatant.GetStat(strDef)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	strStat.SetBase(30)
 
