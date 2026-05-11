@@ -4,7 +4,7 @@ end
 
 function OnCombatantStatBase(ctx, evt)
     if evt.statDef.name == "hp" and ctx.target.id == evt.combatant.id then
-        local currentHp = ctx.target.getStat("hp").get()
+        local currentHp = ctx.target.getStat("hp").getValue()
         if evt.value < currentHp then
             evt.setValue(evt.value + 1)
         end

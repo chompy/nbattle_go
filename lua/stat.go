@@ -26,6 +26,9 @@ func statToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 		"addBase": func(value float64) {
 			stat.AddBase(int(value))
 		},
+		"subBase": func(value float64) {
+			stat.SubBase(int(value))
+		},
 		"getValue": stat.GetValue,
 		"setMod": func(source any, value int) {
 			sourceObj, err := objectFromLua(ctx, source)
@@ -34,19 +37,6 @@ func statToLua(ctx *nbattle.Context, stat *nbattle.Stat) map[string]any {
 				return
 			}
 			stat.SetMod(sourceObj, value)
-		},
-		"get": stat.GetValue,
-		"set": func(value float64) {
-			stat.SetBase(int(value))
-		},
-		"add": func(value float64) {
-			stat.AddBase(int(value))
-		},
-		"subtract": func(value float64) {
-			stat.SubBase(int(value))
-		},
-		"sub": func(value float64) {
-			stat.SubBase(int(value))
 		},
 		"getCombatant": func() map[string]any {
 			combatant, err := ctx.GetCombatantWithStat(stat)

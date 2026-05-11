@@ -3,5 +3,5 @@ function Name()
 end
 
 function OnTick(ctx, evt)
-    ctx.target.getStat("hp").subtract(2)
+    ctx.target.getStat("hp").subBase(2)
 end

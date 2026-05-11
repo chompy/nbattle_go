@@ -4,7 +4,7 @@ end
 
 function OnAdd(ctx)
     local strStat = ctx.target.getStat("str")
-    local sourceStr = ctx.source.getStat("str").get()
-    strStat.set(sourceStr)
+    local sourceStr = ctx.source.getStat("str").getValue()
+    strStat.setBase(sourceStr)
     --ctx.target.removeEffect(ctx.effect)
 end

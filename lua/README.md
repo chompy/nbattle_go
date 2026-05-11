@@ -36,9 +36,7 @@ function Name()
 end
 ```
 
-...TODO/WIP...
-
-All variable and argument types...
+*All variable and argument types...*
 
 - GLOBALS
   - `ctx` - `Context`
@@ -48,18 +46,25 @@ All variable and argument types...
 - `Object` - Value representing an object. It can be the actual object, the ID number of the object, or the name string of the object.
 
 - `Context`
-  - `getTick()` - Function that returns the current tick.
-  - `getCombatants()` - Function that returns a list of all combatants.
-  - `getObject(Object)` - Function that retrieve an object.
+  - `getTick() <number>` - Function that returns the current tick.
+  - `getCombatants() <[]Combatant>` - Function that returns a list of all combatants.
+  - `getObject(Object) <Object>` - Function that retrieve an object.
 
 - `StatDef`
-  - `type` - `number` - Type number of object.
-  - `name` - `string` - Name of the stat definition.
-  - `min` - `number` - Minimum value of the stat.
-  - `max` - `number` - Maximum value of the stat.
+  - `type <number>` - Type number of object.
+  - `name <string>` - Name of the stat definition.
+  - `min <number>` - Minimum value of the stat.
+  - `max <number>` - Maximum value of the stat.
 
 - `Stat`
-  - TODO
+  - `def <StatDef>` - Stat definition for this stat.
+  - `getBase() <number>` - Function that returns the current base value of this stat.
+  - `setBase(<number>)` - Function that sets the base value of this stat.
+  - `addBase(<number>)` - Function that adds the given value to the base value of this stat.
+  - `subBase(<number>)` - Function that subtracts the given value to the base value of this stat.
+  - `getValue(<number>)` - Function that returns the current value of this stat with modifications.
+  - `setMod(<Object>, <number>)` - Function that applies a modification to the stat. Modifications are mapped to an object. Modification value is added to the base value. A value of zero removes the mod.
+  - `getCombatant() <Combatant>` - Function that returns the combatant this stat is applied to.
 
 - `Combatant`
   - `id` - ID of the combatant object.
@@ -67,7 +72,7 @@ All variable and argument types...
   - `getStat(statDef <Object>)` - Retrieve a combatant stat from the stat definition.
   - `setEffect(effectDef <Object>, potency <number>, sourceObject <Object>)` -  
 
-Event handling functions...
+*Event handling functions...*
 
 - `OnAdd(ctx)` - Called when the effect is applied to a combatant.
 - `OnRemove(ctx)` - Called when the effect is removed from a combatant.

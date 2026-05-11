@@ -3,5 +3,5 @@ function Name()
 end
 
 function OnAdd(ctx)
-    ctx.target.getStat("hp").set(25)
+    ctx.target.getStat("hp").setBase(25)
 end
