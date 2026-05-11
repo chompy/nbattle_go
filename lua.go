@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/chompy/nbattle_go/internal/event"
+	"github.com/chompy/nbattle_go/event"
 	luago "github.com/rosbit/luago"
 )
 

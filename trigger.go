@@ -1,6 +1,6 @@
 package nbattle
 
-import "github.com/chompy/nbattle_go/internal/event"
+import "github.com/chompy/nbattle_go/event"
 
 // TriggerDef is a definition of a custom event that can be triggered by an effect.
 type TriggerDef struct {
