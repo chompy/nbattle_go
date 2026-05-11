@@ -78,6 +78,13 @@ end
   - `getStat(statDef <Object>)` - Retrieve a combatant stat from the stat definition.
   - `setEffect(effectDef <Object>, potency <number>, sourceObject <Object>)` -  
 
+- `EffectCtx`
+  - `target <Combatant>` - The combatant that is the target of the effect.
+  - `source <Object>` - The object that is the source of the effect. This can be nil.
+  - `effect <string>` - The name of the effect.
+  - `potency <number>` - The potency of the effect.
+  - `emitTrigger(<string>)` - Function that emits a trigger event.
+
 *Event handling functions...*
 
 - `OnAdd(ctx)` - Called when the effect is applied to a combatant.
