@@ -15,12 +15,12 @@ type luaEffect struct {
 }
 
 // NewEffect creates a new EffectDef from a Lua script.
-func NewLuaEffect(ctx *Context, script io.Reader) (*EffectDef, error) {
+func (c *Context) NewLuaEffect(script io.Reader) (*EffectDef, error) {
 	scriptBytes, err := io.ReadAll(script)
 	if err != nil {
 		return nil, err
 	}
-	luaCtx, err := loadLuaScript(ctx, scriptBytes)
+	luaCtx, err := loadLuaScript(c, scriptBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,8 @@ func NewLuaEffect(ctx *Context, script io.Reader) (*EffectDef, error) {
 	if !ok {
 		return nil, ErrUnexpectedLuaFuncReturn
 	}
-	return ctx.NewEffectDef(name, func() Effect {
-		luaCtx, err := loadLuaScript(ctx, scriptBytes)
+	return c.NewEffectDef(name, func() Effect {
+		luaCtx, err := loadLuaScript(c, scriptBytes)
 		if err != nil {
 			return nil
 		}

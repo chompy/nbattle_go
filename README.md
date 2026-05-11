@@ -26,7 +26,7 @@ func main() {
         panic(err)
     }
     defer f.Close()
-    effectDef, err := nbattle.NewLuaEffect(ctx, f)
+    effectDef, err := ctx.NewLuaEffect(ctx, f)
     // ...
 }
 ```
