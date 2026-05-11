@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go/internal/combat"
+	nbattle "github.com/chompy/nbattle_go"
 )
 
 func TestStatDef(t *testing.T) {

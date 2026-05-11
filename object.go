@@ -1,4 +1,4 @@
-package combat
+package nbattle
 
 type ObjectType int
 

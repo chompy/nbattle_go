@@ -4,8 +4,7 @@ import (
 	"embed"
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go/internal/combat"
-	"github.com/chompy/nbattle_go/internal/lua"
+	nbattle "github.com/chompy/nbattle_go"
 )
 
 //go:embed effects/*.lua
@@ -21,7 +20,7 @@ func TestPoisonEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +69,7 @@ func TestRegenerateEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,12 +118,12 @@ func TestPoisonAndRegenerateInteraction(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	poisonDef, err := lua.NewEffect(ctx, poisonF)
+	poisonDef, err := nbattle.NewLuaEffect(ctx, poisonF)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	regenDef, err := lua.NewEffect(ctx, regenF)
+	regenDef, err := nbattle.NewLuaEffect(ctx, regenF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,7 +170,7 @@ func TestShieldEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +212,7 @@ func TestCounterEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +251,7 @@ func TestSelfHealEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,12 +304,12 @@ func TestTriggerEffect(t *testing.T) {
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 	strStatDef := ctx.NewStatDef("str", 0, 99)
 
-	triggerDef, err := lua.NewEffect(ctx, triggerF)
+	triggerDef, err := nbattle.NewLuaEffect(ctx, triggerF)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = lua.NewEffect(ctx, buffF)
+	_, err = nbattle.NewLuaEffect(ctx, buffF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -344,7 +343,7 @@ func TestCopyStatEffect(t *testing.T) {
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 	strStatDef := ctx.NewStatDef("str", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -384,7 +383,7 @@ func TestReflectEffect(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -423,7 +422,7 @@ func TestMultipleCombatantsWithEffects(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	poisonDef, err := lua.NewEffect(ctx, poisonF)
+	poisonDef, err := nbattle.NewLuaEffect(ctx, poisonF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -484,7 +483,7 @@ func TestNewCombatantEvent(t *testing.T) {
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 	strStatDef := ctx.NewStatDef("str", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -514,7 +513,7 @@ func TestEffectOnNilSource(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,7 +545,7 @@ func TestEffectRemoval(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, regenF)
+	effectDef, err := nbattle.NewLuaEffect(ctx, regenF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -596,17 +595,17 @@ func TestMultipleEffectsSameCombatant(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 
-	poisonDef, err := lua.NewEffect(ctx, poisonF)
+	poisonDef, err := nbattle.NewLuaEffect(ctx, poisonF)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	regenDef, err := lua.NewEffect(ctx, regenF)
+	regenDef, err := nbattle.NewLuaEffect(ctx, regenF)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	shieldDef, err := lua.NewEffect(ctx, shieldF)
+	shieldDef, err := nbattle.NewLuaEffect(ctx, shieldF)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -637,7 +636,7 @@ func TestEffectWithNoEventResponse(t *testing.T) {
 	hpStatDef := ctx.NewStatDef("hp", 0, 99)
 	strStatDef := ctx.NewStatDef("str", 0, 99)
 
-	effectDef, err := lua.NewEffect(ctx, f)
+	effectDef, err := nbattle.NewLuaEffect(ctx, f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -682,7 +681,7 @@ func TestDefendEffectWithReducedDamage(t *testing.T) {
 	ctx := nbattle.New()
 	hpStatDef := ctx.NewStatDef("hp", 0, 200)
 
-	effectDef, err := lua.NewEffect(ctx, defendF)
+	effectDef, err := nbattle.NewLuaEffect(ctx, defendF)
 	if err != nil {
 		t.Fatal(err)
 	}

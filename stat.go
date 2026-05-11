@@ -1,4 +1,4 @@
-package combat
+package nbattle
 
 import "github.com/chompy/nbattle_go/internal/event"
 
