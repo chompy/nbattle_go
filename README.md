@@ -17,7 +17,6 @@ To add a Lua effect use the `NewEffect` function and provide the NBattle context
 ```go
 import (
 	nbattle "github.com/chompy/nbattle_go"
-	nbattlelua "github.com/chompy/nbattle_go/lua"
 )
 
 func main() {
@@ -27,7 +26,7 @@ func main() {
         panic(err)
     }
     defer f.Close()
-    effectDef, err := nbattlelua.NewEffect(ctx, f)
+    effectDef, err := nbattle.NewLuaEffect(ctx, f)
     // ...
 }
 ```
