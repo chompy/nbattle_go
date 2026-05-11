@@ -1,6 +1,6 @@
-package nbattle
+package combat
 
-import "github.com/chompy/nbattle_go/event"
+import "github.com/chompy/nbattle_go/internal/event"
 
 // StatDef is a definition of a stat that can be applied to a combatant.
 type StatDef struct {

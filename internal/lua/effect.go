@@ -4,8 +4,8 @@ import (
 	"io"
 	"log"
 
-	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/event"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
+	"github.com/chompy/nbattle_go/internal/event"
 	luago "github.com/rosbit/luago"
 )
 

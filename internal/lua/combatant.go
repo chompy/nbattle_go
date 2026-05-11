@@ -3,7 +3,7 @@ package lua
 import (
 	"fmt"
 
-	nbattle "github.com/chompy/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
 )
 
 func combatantToLua(ctx *nbattle.Context, combatant *nbattle.Combatant) map[string]any {

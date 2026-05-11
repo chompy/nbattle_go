@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	nbattle "github.com/chompy/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
 )
 
 func luaGlobals(ctx *nbattle.Context) map[string]any {

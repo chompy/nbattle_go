@@ -1,7 +1,7 @@
 package lua
 
 import (
-	nbattle "github.com/chompy/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
 )
 
 func statDefToLua(statDef *nbattle.StatDef) map[string]any {

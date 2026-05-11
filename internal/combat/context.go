@@ -1,7 +1,7 @@
-package nbattle
+package combat
 
 import (
-	"github.com/chompy/nbattle_go/event"
+	"github.com/chompy/nbattle_go/internal/event"
 )
 
 // Context is the main object of NBattle.

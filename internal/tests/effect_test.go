@@ -3,8 +3,8 @@ package tests
 import (
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/event"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
+	"github.com/chompy/nbattle_go/internal/event"
 )
 
 type TestEffect struct {

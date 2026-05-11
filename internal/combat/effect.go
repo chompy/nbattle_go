@@ -1,9 +1,9 @@
-package nbattle
+package combat
 
 import (
 	"slices"
 
-	"github.com/chompy/nbattle_go/event"
+	"github.com/chompy/nbattle_go/internal/event"
 )
 
 // EffectDef is a definition of an effect.

@@ -4,8 +4,8 @@ import (
 	"embed"
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go"
-	"github.com/chompy/nbattle_go/lua"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
+	"github.com/chompy/nbattle_go/internal/lua"
 )
 
 //go:embed effects/*.lua

@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	nbattle "github.com/chompy/nbattle_go"
+	nbattle "github.com/chompy/nbattle_go/internal/combat"
 )
 
 func initCtx() *nbattle.Context {
