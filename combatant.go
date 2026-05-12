@@ -140,7 +140,7 @@ func (c *Combatant) HasEffect(effectDefObj any) bool {
 		return false
 	}
 	return slices.ContainsFunc(c.effects, func(e *CombatantEffect) bool {
-		return e.EffectCtx.Def.GetID() == effectDef.GetID()
+		return e.EffectCtx.Def.GetID() == effectDef.GetID() && e.EffectCtx.Potency > 0
 	})
 }
 

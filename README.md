@@ -73,10 +73,12 @@ end
   - `getCombatant() <Combatant>` - Function that returns the combatant this stat is applied to.
 
 - `Combatant`
-  - `id` - ID of the combatant object.
-  - `type` - Type number of object.
   - `getStat(statDef <Object>)` - Retrieve a combatant stat from the stat definition.
-  - `setEffect(effectDef <Object>, potency <number>, sourceObject <Object>)` -  
+  - `setEffect(effectDef <Object>, potency <number>, sourceObject <Object>)` - Apply effect to combatant.
+  - `removeEffect(effectDef <Object>)` - Remove effect from combatant. Same as calling `setEffect` with zero potency.
+  - `hasEffect(effectDef <Object>)` - Return true if combatant has given effect applied.
+  - `setFlag(flag <number>)` - Apply a flag to the combatant.
+  - `hasFlag(flag <number>)` - Return true if combatant has the given flag.
 
 - `EffectCtx`
   - `target <Combatant>` - The combatant that is the target of the effect.
@@ -84,14 +86,48 @@ end
   - `effect <string>` - The name of the effect.
   - `potency <number>` - The potency of the effect.
   - `emitTrigger(<string>)` - Function that emits a trigger event.
+  - `remove()` - Function that removes this effect. Same as calling `combatant.setEffect` with zero potency.
+
+- `TickEvent`
+  - `tick <number>` - The current tick.
+
+- `CombatantUpdateEvent`
+  - `combatant <Combatant>` - The combatant who received the update.
+  - `active <bool>` - Whether or not the combatant is currently active.
+  - `flags <number>` - The combatant flag value.
+
+- `CombatantStatBaseEvent`
+  - `combatant <Combatant>` - The combatant whose base stat changed.
+  - `statDef <StatDef>` - The stat definition of the stat that changed.
+  - `value <number>` - The new value of the stat.
+  - `setValue(value <number>)` - Function that allows the base stat value to be altered as part of the same event.
+
+- `CombatantStatModEvent`
+  - `combatant <Combatant>` - The combatant whose stat has been modified.
+  - `statDef <StatDef>` - The stat definition of the stat that has been modified.
+  - `value <number>` - The modification amount.
+  - `setValue(value <number>)` - Function that allows the stat modification value to be altered as part of the same event.
+
+- `CombatantEffectEvent`
+  - `target <Combatant>` - The combatant whom the effect is being applied to.
+  - `effect <string>` - The name of the effect.
+  - `potency <number>` - The potency of the effect. If this is zero then the effect is being removed.
+  - `source <Object>` - The source of the effect, can be nil.
+
+- `TriggerEvent`
+  - `trigger <string>` - The name of the trigger.
+  - `target <Combatant>` - The target of the effect that spawned this trigger.
+  - `effect <string>` - The effect name that spawned this trigger.
+  - `potency <number>` - The potency of the effect that spawned this trigger.
+  - `source <Object>` - The source of the effect that spawned this trigger.
 
 *Event handling functions...*
 
-- `OnAdd(ctx)` - Called when the effect is applied to a combatant.
-- `OnRemove(ctx)` - Called when the effect is removed from a combatant.
-- `OnTick(ctx, evt)` - Called whenever combatant advances a tick.
-- `OnCombatantUpdate(ctx, evt)` - Called when a new combatant is added or an existing combatant is updated.
-- `OnCombatantStatBase(ctx, evt)` - Called when a stat applied to a combatant has a base value change.
-- `OnCombatantStatMod(ctx, evt)` - Called when a stat applied to a combatant has a mod value change.
-- `OnCombatantEffect(ctx, evt)` - Called when an effect is added or removed from a combatant.
-- `OnTrigger(ctx, evt)` - Called when an effect emits a trigger event.
+- `OnAdd(ctx <EffectCtx>)` - Called when the effect is applied to a combatant.
+- `OnRemove(ctx <EffectCtx>)` - Called when the effect is removed from a combatant.
+- `OnTick(ctx <EffectCtx>, evt <TickEvent>)` - Called whenever combatant advances a tick.
+- `OnCombatantUpdate(ctx <EffectCtx>, evt <CombatantUpdateEvent>)` - Called when a new combatant is added or an existing combatant is updated.
+- `OnCombatantStatBase(ctx <EffectCtx>, evt <CombatantStatBaseEvent>)` - Called when a stat applied to a combatant has a base value change.
+- `OnCombatantStatMod(ctx <EffectCtx>, evt <CombatantStatModEvent>)` - Called when a stat applied to a combatant has a mod value change.
+- `OnCombatantEffect(ctx <EffectCtx>, evt <CombatantEffectEvent>)` - Called when an effect is added or removed from a combatant.
+- `OnTrigger(ctx <EffectCtx>, evt <TriggerEvent>)` - Called when an effect emits a trigger event.

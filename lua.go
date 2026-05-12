@@ -338,6 +338,9 @@ func effectCtxToLua(effectCtx *EffectCtx) map[string]any {
 		"effect":      effectCtx.Def.GetName(),
 		"potency":     effectCtx.Potency,
 		"emitTrigger": effectCtx.EmitTrigger,
+		"remove": func() {
+			effectCtx.Target.SetEffect(effectCtx.Def, 0, nil)
+		},
 	}
 }
 
