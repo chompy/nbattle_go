@@ -6,18 +6,36 @@ import (
 
 // Context is the main object of NBattle.
 type Context struct {
-	idCounter   int
-	tick        int
-	objects     []Object
-	eventHooks  []event.Hook
-	effectStack []Effect
-	flags       map[string]uint64
-	flagCounter uint64
+	idCounter        int
+	tick             int
+	objects          []Object
+	eventHooks       []event.Hook
+	effectStack      []Effect
+	flags            map[string]uint64
+	flagCounter      uint64
+	luaCallDepth     int
+	deferredRemovals []*deferredRemoval
+}
+
+type deferredRemoval struct {
+	combatant *Combatant
+	effect    *CombatantEffect
+	effectDef *EffectDef
 }
 
 // New creates a new NBattle context.
 func New() *Context {
-	return &Context{0, 0, make([]Object, 0), make([]event.Hook, 0), make([]Effect, 0), make(map[string]uint64), 1}
+	return &Context{
+		idCounter:        0,
+		tick:             0,
+		objects:          make([]Object, 0),
+		eventHooks:       make([]event.Hook, 0),
+		effectStack:      make([]Effect, 0),
+		flags:            make(map[string]uint64),
+		flagCounter:      1,
+		luaCallDepth:     0,
+		deferredRemovals: make([]*deferredRemoval, 0),
+	}
 }
 
 func (c *Context) newObject() BaseObject {
@@ -352,4 +370,33 @@ func (c *Context) HandleEvent(evt event.Event) error {
 
 	}
 	return nil
+}
+
+// processDeferredRemovals executes queued OnRemove callbacks after Lua returns.
+func (c *Context) processDeferredRemovals() {
+	for len(c.deferredRemovals) > 0 {
+		batch := c.deferredRemovals
+		c.deferredRemovals = make([]*deferredRemoval, 0)
+		for _, dr := range batch {
+			found := false
+			for _, e := range dr.combatant.effects {
+				if e == dr.effect {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+			c.addEffectToStack(dr.effect.Effect)
+			dr.effect.Effect.OnRemove(dr.effect.EffectCtx)
+			c.removeEffectFromStack(dr.effect.Effect)
+			c.EmitEvent(&event.CombatantEffect{
+				TargetID:    dr.combatant.GetID(),
+				EffectDefID: dr.effectDef.GetID(),
+				Potency:     0,
+				SourceID:    0,
+			})
+		}
+	}
 }

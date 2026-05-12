@@ -189,14 +189,27 @@ func loadLuaScript(ctx *Context, scriptBytes []byte) (*luago.LuaContext, error) 
 	return luaCtx, nil
 }
 
+// luaCall wraps a Lua CallFunc invocation, tracking depth to enable
+// deferred effect removal when removeEffect is called during Lua execution.
+func luaCall(ctx *Context, luaCtx *luago.LuaContext, name string, args ...any) (any, error) {
+	ctx.luaCallDepth++
+	defer func() {
+		ctx.luaCallDepth--
+		if ctx.luaCallDepth == 0 {
+			ctx.processDeferredRemovals()
+		}
+	}()
+	return luaCtx.CallFunc(name, args...)
+}
+
 func (e *luaEffect) OnAdd(ctx *EffectCtx) {
-	if _, err := e.luaCtx.CallFunc("OnAdd", effectCtxToLua(ctx)); err != nil {
+	if _, err := luaCall(ctx.Ctx, e.luaCtx, "OnAdd", effectCtxToLua(ctx)); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
 	}
 }
 
 func (e *luaEffect) OnRemove(ctx *EffectCtx) {
-	if _, err := e.luaCtx.CallFunc("OnRemove", effectCtxToLua(ctx)); err != nil {
+	if _, err := luaCall(ctx.Ctx, e.luaCtx, "OnRemove", effectCtxToLua(ctx)); err != nil {
 		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
 	}
 }
@@ -204,7 +217,7 @@ func (e *luaEffect) OnRemove(ctx *EffectCtx) {
 func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 	switch evt := evt.(type) {
 	case *event.Tick:
-		if _, err := e.luaCtx.CallFunc("OnTick", effectCtxToLua(ctx), map[string]any{"tick": evt.Tick}); err != nil {
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, "OnTick", effectCtxToLua(ctx), map[string]any{"tick": evt.Tick}); err != nil {
 			logLuaFuncCallError(err, ctx.Def.GetName()+".OnTick")
 		}
 
@@ -214,7 +227,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
 			break
 		}
-		if _, err := e.luaCtx.CallFunc("OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, "OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
 			"active":    evt.Active,
 			"flags":     evt.Flags,
@@ -234,7 +247,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, funcName, effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
 			"statDef":   statDefToLua(statDef),
 			"value":     evt.Value,
@@ -257,7 +270,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, funcName, effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
 			"statDef":   statDefToLua(statDef),
 			"value":     evt.ModValue,
@@ -281,7 +294,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			break
 		}
 		source, _ := ctx.Ctx.GetObject(evt.SourceID)
-		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, funcName, effectCtxToLua(ctx), map[string]any{
 			"target":  combatantToLua(ctx.Ctx, target),
 			"effect":  effectDef.GetName(),
 			"potency": evt.Potency,
@@ -316,7 +329,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 		}
 		effectSource, _ := ctx.Ctx.GetObject(evt.EffectSourceID)
 
-		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
+		if _, err := luaCall(ctx.Ctx, e.luaCtx, funcName, effectCtxToLua(ctx), map[string]any{
 			"trigger": triggerDef.GetName(),
 			"target":  combatantToLua(ctx.Ctx, effectTarget),
 			"effect":  effectDef.GetName(),
