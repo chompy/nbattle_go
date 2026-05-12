@@ -82,6 +82,12 @@ func TestCombatantEffect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ctx.Tick()
+	if cmbt.HasEffect(hpStat) {
+		t.Fatal("expected effect to be removed")
+	}
+
 	if hpStat.GetValue() != 31 {
 		t.Fatal("expected effect to set combatant hp to 31 on removal")
 	}

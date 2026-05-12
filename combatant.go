@@ -76,6 +76,7 @@ func (c *Combatant) GetStats() []*Stat {
 // SetEffect adds an effect to the combatant. Potency is the power of the effect.
 // A potency of zero removes the effect.
 func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) error {
+	// find the effect definition
 	effectDefObj, err := c.ctx.GetObject(effectDefObj)
 	if err != nil {
 		return err
@@ -84,57 +85,48 @@ func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) erro
 	if !ok {
 		return ErrUnexpectedObjectType
 	}
-	source, _ := c.ctx.GetObject(sourceObj)
-	c.removeEffect(effectDef)
-	if potency <= 0 {
-		return nil
-	}
-	return c.addEffect(effectDef, potency, source)
-}
 
-func (c *Combatant) addEffect(effectDef *EffectDef, potency int, source Object) error {
-	effect := effectDef.new()
-	effectCtx := &EffectCtx{c.ctx, effectDef, potency, c, source}
-	combatantEffect := &CombatantEffect{effect, effectCtx}
-	c.effects = append(c.effects, combatantEffect)
+	// find source object id if exists
+	source, _ := c.ctx.GetObject(sourceObj)
 	sourceID := 0
 	if source != nil {
 		sourceID = source.GetID()
 	}
-	c.ctx.addEffectToStack(effect)
-	effect.OnAdd(effectCtx)
-	c.ctx.removeEffectFromStack(effect)
-	c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), Potency: potency, SourceID: sourceID})
-	return nil
-}
 
-func (c *Combatant) removeEffect(effectDef *EffectDef) {
-	idx := -1
-	for i, e := range c.effects {
-		if e.EffectCtx.Def.GetID() == effectDef.GetID() {
-			idx = i
+	// check if effect is already applied to the combatant
+	var combatantEffect *CombatantEffect
+	for _, ce := range c.effects {
+		if ce.EffectCtx.Def.GetID() == effectDef.GetID() {
+			combatantEffect = ce
 			break
 		}
 	}
-	if idx == -1 {
-		return
-	}
-	ce := c.effects[idx]
-	c.effects = append(c.effects[:idx], c.effects[idx+1:]...)
 
-	if c.ctx.luaCallDepth > 0 {
-		c.ctx.deferredRemovals = append(c.ctx.deferredRemovals, &deferredRemoval{
-			combatant: c,
-			effect:    ce,
-			effectDef: effectDef,
-		})
-		return
+	// zero potency means effect should be removed
+	if potency <= 0 && combatantEffect != nil {
+		combatantEffect.EffectCtx.Potency = 0
+		return nil
 	}
 
-	c.ctx.addEffectToStack(ce.Effect)
-	ce.Effect.OnRemove(ce.EffectCtx)
-	c.ctx.removeEffectFromStack(ce.Effect)
-	c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), Potency: 0, SourceID: 0})
+	// no change, same potency as existing
+	if combatantEffect != nil && potency == combatantEffect.EffectCtx.Potency {
+		return nil
+	}
+
+	// create new instance of effect if not already applied
+	if combatantEffect == nil {
+		effect := effectDef.new()
+		effectCtx := &EffectCtx{c.ctx, effectDef, 0, c, source}
+		combatantEffect = &CombatantEffect{effect, effectCtx}
+		c.effects = append(c.effects, combatantEffect)
+	}
+	combatantEffect.EffectCtx.Potency = potency
+
+	// call effect's OnAdd function and emit event
+	c.ctx.addEffectToStack(combatantEffect.Effect)
+	combatantEffect.Effect.OnAdd(combatantEffect.EffectCtx)
+	c.ctx.removeEffectFromStack(combatantEffect.Effect)
+	return c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: effectDef.GetID(), Potency: potency, SourceID: sourceID})
 }
 
 // HasEffect returns true if the combatant has the given effect.
@@ -206,14 +198,10 @@ func (c *Combatant) GetFlags() uint64 {
 	return c.flags
 }
 
-// HandleEffectEvent sends the given event to all the effects of this combatant.
-// A snapshot of the effects slice is taken before iteration to prevent
-// corruption when effects are added or removed during event dispatch.
+// HandleEffectEvent sends the given event to all the active effects of this combatant.
 func (c *Combatant) HandleEffectEvent(event event.Event) error {
-	effects := make([]*CombatantEffect, len(c.effects))
-	copy(effects, c.effects)
-	for _, effect := range effects {
-		if c.isEffectActive(effect) && !c.ctx.isEffectInStack(effect.Effect) {
+	for _, effect := range c.effects {
+		if !c.ctx.isEffectInStack(effect.Effect) && effect.EffectCtx.Potency > 0 {
 			c.ctx.addEffectToStack(effect.Effect)
 			effect.Effect.OnEvent(effect.EffectCtx, event)
 			c.ctx.removeEffectFromStack(effect.Effect)
@@ -222,15 +210,19 @@ func (c *Combatant) HandleEffectEvent(event event.Event) error {
 	return nil
 }
 
-func (c *Combatant) isEffectActive(ce *CombatantEffect) bool {
-	for _, e := range c.effects {
-		if e == ce {
-			return true
-		}
-	}
-	return false
-}
-
 func (c *Combatant) emitUpdateEvent() {
 	c.ctx.EmitEvent(&event.CombatantUpdate{CombatantID: c.GetID(), Active: c.active, Flags: c.flags})
+}
+
+func (c *Combatant) processEffectRemovals() {
+	c.effects = slices.DeleteFunc(c.effects, func(e *CombatantEffect) bool {
+		if e.EffectCtx.Potency <= 0 {
+			c.ctx.addEffectToStack(e.Effect)
+			e.Effect.OnRemove(e.EffectCtx)
+			c.ctx.removeEffectFromStack(e.Effect)
+			c.ctx.EmitEvent(&event.CombatantEffect{TargetID: c.GetID(), EffectDefID: e.EffectCtx.Def.GetID(), Potency: 0, SourceID: 0})
+			return true
+		}
+		return false
+	})
 }
