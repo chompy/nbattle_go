@@ -52,14 +52,9 @@ func (c *Combatant) SetActive(active bool) {
 
 // GetStat retrieves the combatant's stat from a stat definition object.
 func (c *Combatant) GetStat(statDefObj any) (*Stat, error) {
-	statDefObj, err := c.ctx.GetObject(statDefObj)
+	statDef, err := c.ctx.GetStatDef(statDefObj)
 	if err != nil {
 		return nil, err
-	}
-	statDef, ok := statDefObj.(*StatDef)
-	if !ok {
-		c.ctx.log.Error("Unexpected stat def when retrieve combatant stat.", "combatant", c, "statDef", statDefObj)
-		return nil, ErrUnexpectedObjectType
 	}
 	if c.stats == nil {
 		c.stats = make([]*Stat, 0)
@@ -83,14 +78,9 @@ func (c *Combatant) GetStats() []*Stat {
 // A potency of zero removes the effect.
 func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) error {
 	// find the effect definition
-	effectDefObj, err := c.ctx.GetObject(effectDefObj)
+	effectDef, err := c.ctx.GetEffectDef(effectDefObj)
 	if err != nil {
 		return err
-	}
-	effectDef, ok := effectDefObj.(*EffectDef)
-	if !ok {
-		c.ctx.log.Error("Unexpected effect def when setting combatant effect.", "target", c, "effectDef", effectDefObj)
-		return ErrUnexpectedObjectType
 	}
 
 	// find source object id if exists
@@ -140,12 +130,8 @@ func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) erro
 
 // HasEffect returns true if the combatant has the given effect.
 func (c *Combatant) HasEffect(effectDefObj any) bool {
-	effectDefObj, err := c.ctx.GetObject(effectDefObj)
+	effectDef, err := c.ctx.GetEffectDef(effectDefObj)
 	if err != nil {
-		return false
-	}
-	effectDef, ok := effectDefObj.(*EffectDef)
-	if !ok {
 		return false
 	}
 	return slices.ContainsFunc(c.effects, func(e *CombatantEffect) bool {

@@ -42,14 +42,9 @@ func (e *EffectCtx) String() string {
 
 // EmitTrigger emits a trigger event for the given trigger definition.
 func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
-	triggerDefObj, err := e.Ctx.GetObject(triggerDefObj)
+	triggerDef, err := e.Ctx.GetTriggerDef(triggerDefObj)
 	if err != nil {
 		return err
-	}
-	triggerDef, ok := triggerDefObj.(*TriggerDef)
-	if !ok {
-		e.Ctx.log.Error("Unexpected trigger def when emitting trigger event from effect.", "effect", e.Def, "triggerDef", triggerDefObj)
-		return ErrUnexpectedObjectType
 	}
 	sourceID := 0
 	if e.Source != nil {

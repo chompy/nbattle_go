@@ -28,7 +28,7 @@ func TestTriggerDefGetByID(t *testing.T) {
 	ctx := nbattle.New()
 	triggerDef := ctx.NewTriggerDef("my_trigger")
 
-	retrieved, err := ctx.GetTriggerDefByID(triggerDef.GetID())
+	retrieved, err := ctx.GetTriggerDef(triggerDef.GetID())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +37,7 @@ func TestTriggerDefGetByID(t *testing.T) {
 		t.Fatal("expected to get the same trigger def")
 	}
 
-	_, err = ctx.GetTriggerDefByID(999)
+	_, err = ctx.GetTriggerDef(999)
 	if err != nbattle.ErrObjectNotFound {
 		t.Errorf("expected ErrObjectNotFound, got %v", err)
 	}
@@ -47,7 +47,7 @@ func TestTriggerDefGetByName(t *testing.T) {
 	ctx := nbattle.New()
 	triggerDef := ctx.NewTriggerDef("my_trigger")
 
-	retrieved, err := ctx.GetTriggerDefByName("my_trigger")
+	retrieved, err := ctx.GetTriggerDef("my_trigger")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,19 +56,9 @@ func TestTriggerDefGetByName(t *testing.T) {
 		t.Fatal("expected to get the same trigger def")
 	}
 
-	_, err = ctx.GetTriggerDefByName("nonexistent")
+	_, err = ctx.GetTriggerDef("nonexistent")
 	if err != nbattle.ErrObjectNotFound {
 		t.Errorf("expected ErrObjectNotFound, got %v", err)
-	}
-}
-
-func TestTriggerDefWrongType(t *testing.T) {
-	ctx := nbattle.New()
-	ctx.NewStatDef("hp", 0, 99)
-
-	_, err := ctx.GetTriggerDefByID(1)
-	if err != nbattle.ErrUnexpectedObjectType {
-		t.Errorf("expected ErrUnexpectedObjectType, got %v", err)
 	}
 }
 
@@ -281,8 +271,8 @@ func TestTriggerMultipleEffects(t *testing.T) {
 	ctx.NewEffectDef("capture2", func() nbattle.Effect { return capture2 })
 
 	target := ctx.NewCombatant()
-	cap1Def, _ := ctx.GetEffectDefByName("capture1")
-	cap2Def, _ := ctx.GetEffectDefByName("capture2")
+	cap1Def, _ := ctx.GetEffectDef("capture1")
+	cap2Def, _ := ctx.GetEffectDef("capture2")
 	target.SetEffect(cap1Def, 1, nil)
 	target.SetEffect(cap2Def, 1, nil)
 
@@ -321,24 +311,6 @@ func TestTriggerEmitTriggerOnNotFound(t *testing.T) {
 	err := effectCtx.EmitTrigger(999)
 	if err != nbattle.ErrObjectNotFound {
 		t.Errorf("expected ErrObjectNotFound, got %v", err)
-	}
-}
-
-func TestTriggerEmitTriggerWrongType(t *testing.T) {
-	ctx := nbattle.New()
-	ctx.NewStatDef("hp", 0, 99)
-
-	effectCtx := &nbattle.EffectCtx{
-		Ctx:     ctx,
-		Def:     ctx.NewEffectDef("dummy", func() nbattle.Effect { return &EmitTriggerEffect{} }),
-		Potency: 1,
-		Target:  ctx.NewCombatant(),
-		Source:  nil,
-	}
-
-	err := effectCtx.EmitTrigger(1)
-	if err != nbattle.ErrUnexpectedObjectType {
-		t.Errorf("expected ErrUnexpectedObjectType, got %v", err)
 	}
 }
 

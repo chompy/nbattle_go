@@ -208,7 +208,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 		}
 
 	case *event.CombatantUpdate:
-		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		combatant, err := ctx.Ctx.GetCombatant(evt.CombatantID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnCombatantUpdate")
 			break
@@ -223,12 +223,12 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 
 	case *event.CombatantStatBase:
 		funcName := "OnCombatantStatBase"
-		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		combatant, err := ctx.Ctx.GetCombatant(evt.CombatantID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
+		statDef, err := ctx.Ctx.GetStatDef(evt.StatDefID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
@@ -246,12 +246,12 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 
 	case *event.CombatantStatMod:
 		funcName := "OnCombatantStatMod"
-		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
+		combatant, err := ctx.Ctx.GetCombatant(evt.CombatantID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
+		statDef, err := ctx.Ctx.GetStatDef(evt.StatDefID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
@@ -269,12 +269,12 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 
 	case *event.CombatantEffect:
 		funcName := "OnCombatantEffect"
-		target, err := ctx.Ctx.GetCombatantByID(evt.TargetID)
+		target, err := ctx.Ctx.GetCombatant(evt.TargetID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		effectDef, err := ctx.Ctx.GetEffectDefByID(evt.EffectDefID)
+		effectDef, err := ctx.Ctx.GetEffectDef(evt.EffectDefID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
@@ -291,24 +291,17 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 
 	case *event.Trigger:
 		funcName := "OnTrigger"
-
-		triggerDefObj, err := ctx.Ctx.GetObject(evt.TriggerDefID)
+		triggerDef, err := ctx.Ctx.GetTriggerDef(evt.TriggerDefID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		triggerDef, ok := triggerDefObj.(*TriggerDef)
-		if !ok {
-			logLuaFuncCallError(ctx.Ctx.log, ErrUnexpectedObjectType, ctx.Def.GetName()+"."+funcName)
-			break
-		}
-
-		effectDef, err := ctx.Ctx.GetEffectDefByID(evt.EffectDefID)
+		effectDef, err := ctx.Ctx.GetEffectDef(evt.EffectDefID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
-		effectTarget, err := ctx.Ctx.GetCombatantByID(evt.EffectTargetID)
+		effectTarget, err := ctx.Ctx.GetCombatant(evt.EffectTargetID)
 		if err != nil {
 			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break

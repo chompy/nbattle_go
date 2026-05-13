@@ -32,7 +32,7 @@ func TestHandleEvent(t *testing.T) {
 	}
 	maxHpStat.SetBase(30)
 
-	recCmbt, err := recCtx.GetCombatantByID(cmbt.GetID())
+	recCmbt, err := recCtx.GetCombatant(cmbt.GetID())
 	if err != nil {
 		t.Fatal(err)
 	}

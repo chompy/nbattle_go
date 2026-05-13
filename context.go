@@ -134,9 +134,9 @@ func (c *Context) GetStatDefs() []*StatDef {
 	return out
 }
 
-// GetStatDefByID retrieves a stat definition by its ID.
-func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {
-	statDefObj, err := c.GetObjectByID(ID)
+// GetStatDef retrieves a stat definition from an unknown variable.
+func (c *Context) GetStatDef(obj any) (*StatDef, error) {
+	statDefObj, err := c.GetObjectByType(obj, ObjectTypeStatDef)
 	if err != nil {
 		return nil, err
 	}
@@ -147,20 +147,6 @@ func (c *Context) GetStatDefByID(ID int) (*StatDef, error) {
 	return statDef, nil
 }
 
-// GetStatDefByName retrieves a stat definition by its name.
-func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
-	for _, def := range c.objects {
-		statDef, ok := def.(*StatDef)
-		if !ok {
-			continue
-		}
-		if statDef.GetName() == name {
-			return statDef, nil
-		}
-	}
-	return nil, ErrObjectNotFound
-}
-
 // NewEffectDef creates a new effect definition.
 func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), name, create}
@@ -169,9 +155,9 @@ func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	return effectDef
 }
 
-// GetEffectDefByID retrieves an effect definition by its ID.
-func (c *Context) GetEffectDefByID(ID int) (*EffectDef, error) {
-	effectDefObj, err := c.GetObjectByID(ID)
+// GetEffectDef retrieves an effect definition from an unknown variable.
+func (c *Context) GetEffectDef(obj any) (*EffectDef, error) {
+	effectDefObj, err := c.GetObjectByType(obj, ObjectTypeEffectDef)
 	if err != nil {
 		return nil, err
 	}
@@ -182,20 +168,6 @@ func (c *Context) GetEffectDefByID(ID int) (*EffectDef, error) {
 	return effectDef, nil
 }
 
-// GetEffectDefByName retrieves an effect definition by its name.
-func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
-	for _, def := range c.objects {
-		effectDef, ok := def.(*EffectDef)
-		if !ok {
-			continue
-		}
-		if effectDef.GetName() == name {
-			return effectDef, nil
-		}
-	}
-	return nil, ErrObjectNotFound
-}
-
 // NewTriggerDef creates a new trigger definition.
 func (c *Context) NewTriggerDef(name string) *TriggerDef {
 	triggerDef := &TriggerDef{c.newObject(), name}
@@ -204,9 +176,9 @@ func (c *Context) NewTriggerDef(name string) *TriggerDef {
 	return triggerDef
 }
 
-// GetTriggerDefByID retrieves a trigger definition by its ID.
-func (c *Context) GetTriggerDefByID(ID int) (*TriggerDef, error) {
-	triggerDefObj, err := c.GetObjectByID(ID)
+// GetTriggerDef retrieves a trigger definition from an unknown variable.
+func (c *Context) GetTriggerDef(obj any) (*TriggerDef, error) {
+	triggerDefObj, err := c.GetObjectByType(obj, ObjectTypeTriggerDef)
 	if err != nil {
 		return nil, err
 	}
@@ -215,20 +187,6 @@ func (c *Context) GetTriggerDefByID(ID int) (*TriggerDef, error) {
 		return nil, ErrUnexpectedObjectType
 	}
 	return triggerDef, nil
-}
-
-// GetTriggerDefByName retrieves a trigger definition by its name.
-func (c *Context) GetTriggerDefByName(name string) (*TriggerDef, error) {
-	for _, def := range c.objects {
-		triggerDef, ok := def.(*TriggerDef)
-		if !ok {
-			continue
-		}
-		if triggerDef.GetName() == name {
-			return triggerDef, nil
-		}
-	}
-	return nil, ErrObjectNotFound
 }
 
 // NewCombatant creates a new combatant.
@@ -241,7 +199,7 @@ func (c *Context) NewCombatant() *Combatant {
 }
 
 func (c *Context) newCombatantWithID(ID int) *Combatant {
-	combatant, err := c.GetCombatantByID(ID)
+	combatant, err := c.GetCombatant(ID)
 	if err == ErrObjectNotFound {
 		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 		c.objects = append(c.objects, combatant)
@@ -263,9 +221,9 @@ func (c *Context) GetCombatants() []*Combatant {
 	return out
 }
 
-// GetCombatantByID retrieves a combatant by its ID.
-func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
-	combatantObj, err := c.GetObjectByID(ID)
+// GetCombatant retrieves a combatant from an unknown variable.
+func (c *Context) GetCombatant(obj any) (*Combatant, error) {
+	combatantObj, err := c.GetObjectByType(obj, ObjectTypeCombatant)
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +236,9 @@ func (c *Context) GetCombatantByID(ID int) (*Combatant, error) {
 
 // GetCombatantWithStat retrieves a combatant by a stat that has been assigned to it.
 func (c *Context) GetCombatantWithStat(stat *Stat) (*Combatant, error) {
-	combatants := c.GetCombatants()
-	for _, combatant := range combatants {
-		if slices.Contains(combatant.GetStats(), stat) {
+	for _, object := range c.objects {
+		combatant, ok := object.(*Combatant)
+		if ok && slices.Contains(combatant.GetStats(), stat) {
 			return combatant, nil
 		}
 	}
@@ -354,7 +312,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 			c.Tick()
 		}
 	case *event.CombatantUpdate:
-		combatant, err := c.GetCombatantByID(evt.CombatantID)
+		combatant, err := c.GetCombatant(evt.CombatantID)
 		if err != nil {
 			if err == ErrObjectNotFound {
 				combatant = c.newCombatantWithID(evt.CombatantID)
@@ -368,7 +326,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 		return nil
 
 	case *event.CombatantStatBase:
-		combatant, err := c.GetCombatantByID(evt.CombatantID)
+		combatant, err := c.GetCombatant(evt.CombatantID)
 		if err != nil {
 			return err
 		}
@@ -379,7 +337,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 		stat.SetBase(evt.Value)
 
 	case *event.CombatantStatMod:
-		combatant, err := c.GetCombatantByID(evt.CombatantID)
+		combatant, err := c.GetCombatant(evt.CombatantID)
 		if err != nil {
 			return err
 		}
@@ -391,7 +349,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 		return nil
 
 	case *event.CombatantEffect:
-		target, err := c.GetCombatantByID(evt.TargetID)
+		target, err := c.GetCombatant(evt.TargetID)
 		if err != nil {
 			return err
 		}
