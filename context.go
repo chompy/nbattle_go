@@ -41,58 +41,77 @@ func (c *Context) newObject() BaseObject {
 	return BaseObject{c.idCounter, c}
 }
 
-// GetObjectByID retrieves an object by its ID.
-func (c *Context) GetObjectByID(ID int) (Object, error) {
+// GetObjecGetObjectByIDAndTypetByID retrieves an object by its ID and type.
+func (c *Context) GetObjectByIDAndType(ID int, objType ObjectType) (Object, error) {
 	for _, obj := range c.objects {
-		if obj.GetID() == ID {
+		if obj.GetID() == ID && (objType == ObjectTypeUnknown || objType == obj.GetType()) {
 			return obj, nil
 		}
 	}
 	return nil, ErrObjectNotFound
 }
 
+// GetObjectByID retrieves an object by its ID.
+func (c *Context) GetObjectByID(ID int) (Object, error) {
+	return c.GetObjectByIDAndType(ID, ObjectTypeUnknown)
+}
+
 // GetObject retrieves an object from an unknown type value (ID, name, or map containing ID).
-func (c *Context) GetObject(obj any) (Object, error) {
+func (c *Context) GetObjectByType(obj any, objType ObjectType) (Object, error) {
 	switch obj := obj.(type) {
 	case Object:
-		return obj, nil
+		if objType == ObjectTypeUnknown || obj.GetType() == objType {
+			return obj, nil
+		}
 	case int:
-		return c.GetObjectByID(obj)
+		return c.GetObjectByIDAndType(obj, objType)
 	case float32:
-		return c.GetObjectByID(int(obj))
+		return c.GetObjectByIDAndType(int(obj), objType)
 	case float64:
-		return c.GetObjectByID(int(obj))
+		return c.GetObjectByIDAndType(int(obj), objType)
 	case string:
-		return c.GetObjectByName(obj)
+		return c.GetObjectByNameAndType(obj, objType)
 	case map[string]any:
 		objID, ok := obj["id"].(int)
 		if !ok {
 			return nil, ErrUnexpectedObjectType
 		}
-		return c.GetObjectByID(objID)
+		return c.GetObjectByIDAndType(objID, objType)
 	}
 	return nil, ErrUnexpectedObjectType
 }
 
-// GetObjectByName retrieves an object by its name.
-func (c *Context) GetObjectByName(name string) (Object, error) {
+// GetObject retrieves an object from an unknown type value (ID, name, or map containing ID).
+func (c *Context) GetObject(obj any) (Object, error) {
+	return c.GetObjectByType(obj, ObjectTypeUnknown)
+}
+
+// GetObjectByNameAndType retrieves an object by its name and type.
+func (c *Context) GetObjectByNameAndType(name string, objType ObjectType) (Object, error) {
 	for _, object := range c.objects {
-		switch object := object.(type) {
-		case *StatDef:
-			if object.GetName() == name {
-				return object, nil
-			}
-		case *EffectDef:
-			if object.GetName() == name {
-				return object, nil
-			}
-		case *TriggerDef:
-			if object.GetName() == name {
-				return object, nil
+		if objType == ObjectTypeUnknown || object.GetType() == objType {
+			switch object := object.(type) {
+			case *StatDef:
+				if object.GetName() == name {
+					return object, nil
+				}
+			case *EffectDef:
+				if object.GetName() == name {
+					return object, nil
+				}
+			case *TriggerDef:
+				if object.GetName() == name {
+					return object, nil
+				}
 			}
 		}
 	}
 	return nil, ErrObjectNotFound
+}
+
+// GetObjectByName retrieves an object by its name.
+func (c *Context) GetObjectByName(name string) (Object, error) {
+	return c.GetObjectByNameAndType(name, ObjectTypeUnknown)
 }
 
 // NewStatDef creates a new stat definition.
