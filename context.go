@@ -108,6 +108,7 @@ func (c *Context) GetObjectByNameAndType(name string, objType ObjectType) (Objec
 			}
 		}
 	}
+	c.log.Error("Object with name and type not found.", "name", name, "type", objType)
 	return nil, ErrObjectNotFound
 }
 
