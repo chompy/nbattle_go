@@ -330,14 +330,17 @@ func effectCtxToLua(effectCtx *EffectCtx) map[string]any {
 			"error": ErrNilObject,
 		}
 	}
+	effectTarget := effectCtx.Target
+	effectID := effectCtx.Def.GetID()
+	effectName := effectCtx.Def.GetName()
 	return map[string]any{
-		"target":      combatantToLua(effectCtx.Ctx, effectCtx.Target),
+		"target":      combatantToLua(effectCtx.Ctx, effectTarget),
 		"source":      objectToLua(effectCtx.Ctx, effectCtx.Source),
-		"effect":      effectCtx.Def.GetName(),
+		"effect":      effectName,
 		"potency":     effectCtx.Potency,
 		"emitTrigger": effectCtx.EmitTrigger,
 		"remove": func() {
-			effectCtx.Target.SetEffect(effectCtx.Def, 0, nil)
+			effectTarget.SetEffect(effectID, 0, nil)
 		},
 	}
 }
