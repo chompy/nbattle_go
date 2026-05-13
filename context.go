@@ -48,6 +48,7 @@ func (c *Context) GetObjectByIDAndType(ID int, objType ObjectType) (Object, erro
 			return obj, nil
 		}
 	}
+	c.log.Error("Unable to find object with ID and type.", "id", ID, "type", objType)
 	return nil, ErrObjectNotFound
 }
 
@@ -78,6 +79,7 @@ func (c *Context) GetObjectByType(obj any, objType ObjectType) (Object, error) {
 		}
 		return c.GetObjectByIDAndType(objID, objType)
 	}
+	c.log.Error("Unexpected object type.", "object", obj, "type", objType)
 	return nil, ErrUnexpectedObjectType
 }
 
