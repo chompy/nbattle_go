@@ -1,6 +1,8 @@
 package nbattle
 
 import (
+	"log/slog"
+	"os"
 	"slices"
 
 	"github.com/chompy/nbattle_go/event"
@@ -15,10 +17,13 @@ type Context struct {
 	effectStack []Effect
 	flags       map[string]uint64
 	flagCounter uint64
+	log         *slog.Logger
 }
 
 // New creates a new NBattle context.
 func New() *Context {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger.Info("New NBattle context created.")
 	return &Context{
 		idCounter:   0,
 		tick:        0,
@@ -27,6 +32,7 @@ func New() *Context {
 		effectStack: make([]Effect, 0),
 		flags:       make(map[string]uint64),
 		flagCounter: 1,
+		log:         logger,
 	}
 }
 
@@ -93,6 +99,7 @@ func (c *Context) GetObjectByName(name string) (Object, error) {
 func (c *Context) NewStatDef(name string, min, max int) *StatDef {
 	stafDef := &StatDef{c.newObject(), name, min, max}
 	c.objects = append(c.objects, stafDef)
+	c.log.Debug("New stat def created.", "object", stafDef)
 	return stafDef
 }
 
@@ -139,6 +146,7 @@ func (c *Context) GetStatDefByName(name string) (*StatDef, error) {
 func (c *Context) NewEffectDef(name string, create func() Effect) *EffectDef {
 	effectDef := &EffectDef{c.newObject(), name, create}
 	c.objects = append(c.objects, effectDef)
+	c.log.Debug("New effect def created.", "object", effectDef)
 	return effectDef
 }
 
@@ -173,6 +181,7 @@ func (c *Context) GetEffectDefByName(name string) (*EffectDef, error) {
 func (c *Context) NewTriggerDef(name string) *TriggerDef {
 	triggerDef := &TriggerDef{c.newObject(), name}
 	c.objects = append(c.objects, triggerDef)
+	c.log.Debug("New trigger def created.", "object", triggerDef)
 	return triggerDef
 }
 
@@ -208,6 +217,7 @@ func (c *Context) NewCombatant() *Combatant {
 	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 	c.objects = append(c.objects, combatant)
 	combatant.SetActive(true)
+	c.log.Debug("New combatant created.", "object", combatant)
 	return combatant
 }
 
@@ -216,6 +226,7 @@ func (c *Context) newCombatantWithID(ID int) *Combatant {
 	if err == ErrObjectNotFound {
 		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
 		c.objects = append(c.objects, combatant)
+		c.log.Debug("New combatant created.", "object", combatant)
 		return combatant
 	}
 	return combatant
@@ -284,6 +295,7 @@ func (c *Context) Tick() int {
 
 	// emit tick event
 	c.tick++
+	c.log.Debug("Next tick.", "tick", c.tick)
 	c.EmitEvent(&event.Tick{Tick: c.tick})
 	return c.tick
 }
@@ -295,6 +307,7 @@ func (c *Context) GetTick() int {
 
 // EmitEvent sends an event to all hooks and active combatant effects.
 func (c *Context) EmitEvent(event event.Event) error {
+	c.log.Debug("Emit event.", "event", event.Type())
 	for _, hook := range c.eventHooks {
 		if err := hook(event); err != nil {
 			return err
@@ -315,6 +328,7 @@ func (c *Context) HookEvents(hook event.Hook) {
 
 // HandleEvent processes an event from another context.
 func (c *Context) HandleEvent(evt event.Event) error {
+	c.log.Debug("Handle event.", "event", evt.Type())
 	switch evt := evt.(type) {
 	case *event.Tick:
 		for c.GetTick() < evt.Tick {

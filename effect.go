@@ -1,6 +1,7 @@
 package nbattle
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/chompy/nbattle_go/event"
@@ -12,6 +13,10 @@ type EffectDef struct {
 	BaseObject
 	name string
 	new  func() Effect
+}
+
+func (e *EffectDef) String() string {
+	return fmt.Sprintf("<EffectDef name=%s id=%d>", e.name, e.GetID())
 }
 
 func (d *EffectDef) GetType() ObjectType {
@@ -31,6 +36,10 @@ type EffectCtx struct {
 	Source  Object
 }
 
+func (e *EffectCtx) String() string {
+	return fmt.Sprintf("<EffectCtx def=%s target=%s potency=%d>", e.Def.String(), e.Target.String(), e.Potency)
+}
+
 // EmitTrigger emits a trigger event for the given trigger definition.
 func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
 	triggerDefObj, err := e.Ctx.GetObject(triggerDefObj)
@@ -39,6 +48,7 @@ func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
 	}
 	triggerDef, ok := triggerDefObj.(*TriggerDef)
 	if !ok {
+		e.Ctx.log.Error("Unexpected trigger def when emitting trigger event from effect.", "effect", e.Def, "triggerDef", triggerDefObj)
 		return ErrUnexpectedObjectType
 	}
 	sourceID := 0

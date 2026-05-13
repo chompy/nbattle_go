@@ -2,7 +2,7 @@ package nbattle
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"strings"
 )
 
@@ -13,9 +13,9 @@ var (
 	ErrUnexpectedLuaFuncReturn = errors.New("unexpected return value/type from lua function call")
 )
 
-func logLuaFuncCallError(err error, funcName string) {
+func logLuaFuncCallError(logger *slog.Logger, err error, funcName string) {
 	if !isLuaNotFoundErr(err) {
-		log.Printf("WARNING: Error during Lua function call to %s: %s", funcName, err.Error())
+		logger.Warn("Error during Lua function call.", "function", funcName, "error", err)
 	}
 }
 

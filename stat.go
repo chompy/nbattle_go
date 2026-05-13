@@ -1,6 +1,10 @@
 package nbattle
 
-import "github.com/chompy/nbattle_go/event"
+import (
+	"fmt"
+
+	"github.com/chompy/nbattle_go/event"
+)
 
 // StatDef is a definition of a stat that can be applied to a combatant.
 type StatDef struct {
@@ -8,6 +12,10 @@ type StatDef struct {
 	name string
 	min  int
 	max  int
+}
+
+func (s *StatDef) String() string {
+	return fmt.Sprintf("<StatDef name=%s id=%d>", s.name, s.GetID())
 }
 
 func (s *StatDef) GetType() ObjectType {

@@ -3,7 +3,6 @@ package nbattle
 import (
 	"fmt"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/chompy/nbattle_go/event"
@@ -48,7 +47,7 @@ func luaGlobals(ctx *Context) map[string]any {
 	globals := make(map[string]any)
 	globals["ctx"] = contextToLua(ctx)
 	for _, statDef := range ctx.GetStatDefs() {
-		globals["STAT_"+strings.ToUpper(statDef.GetName())] = statDefToLua(statDef)
+		globals["STAT_"+strings.ToUpper(statDef.GetName())] = statDefToLua(ctx, statDef)
 	}
 	for name, value := range ctx.GetFlags() {
 		globals["FLAG_"+strings.ToUpper(name)] = value
@@ -72,8 +71,8 @@ func contextToLua(ctx *Context) map[string]any {
 	}
 }
 
-func errorToLua(err error) map[string]any {
-	log.Println("WARNING: Error during Lua call:", err)
+func errorToLua(ctx *Context, err error) map[string]any {
+	ctx.log.Warn("Error during Lua call.", "error", err)
 	return map[string]any{
 		"type":  ObjectTypeError,
 		"error": err.Error(),
@@ -117,7 +116,7 @@ func objectFromLua(ctx *Context, object any) (Object, error) {
 func objectToLua(ctx *Context, object any) map[string]any {
 	switch object := object.(type) {
 	case *StatDef:
-		return statDefToLua(object)
+		return statDefToLua(ctx, object)
 
 	case *EffectDef:
 		return map[string]any{
@@ -140,7 +139,7 @@ func objectToLua(ctx *Context, object any) map[string]any {
 		return combatantToLua(ctx, object)
 
 	default:
-		return errorToLua(ErrUnexpectedObjectType)
+		return errorToLua(ctx, ErrUnexpectedObjectType)
 	}
 }
 
@@ -157,20 +156,20 @@ func combatantToLua(ctx *Context, combatant *Combatant) map[string]any {
 		"getStat": func(statDef any) map[string]any {
 			stat, err := combatant.GetStat(statDef)
 			if err != nil {
-				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.getStat", combatant.GetID()))
-				return errorToLua(err)
+				logLuaFuncCallError(ctx.log, err, fmt.Sprintf("combatant.%d.getStat", combatant.GetID()))
+				return errorToLua(ctx, err)
 			}
 			return statToLua(ctx, stat)
 		},
 		"setEffect": func(effectDef any, potency int, sourceObj any) {
 			if err := combatant.SetEffect(effectDef, potency, sourceObj); err != nil {
-				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.setEffect", combatant.GetID()))
+				logLuaFuncCallError(ctx.log, err, fmt.Sprintf("combatant.%d.setEffect", combatant.GetID()))
 			}
 		},
 		"hasEffect": combatant.HasEffect,
 		"removeEffect": func(effectDef any) {
 			if err := combatant.SetEffect(effectDef, 0, nil); err != nil {
-				logLuaFuncCallError(err, fmt.Sprintf("combatant.%d.removeEffect", combatant.GetID()))
+				logLuaFuncCallError(ctx.log, err, fmt.Sprintf("combatant.%d.removeEffect", combatant.GetID()))
 			}
 		},
 		"setFlag": combatant.SetFlag,
@@ -191,13 +190,13 @@ func loadLuaScript(ctx *Context, scriptBytes []byte) (*luago.LuaContext, error) 
 
 func (e *luaEffect) OnAdd(ctx *EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnAdd", effectCtxToLua(ctx)); err != nil {
-		logLuaFuncCallError(err, ctx.Def.GetName()+".OnAdd")
+		logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnAdd")
 	}
 }
 
 func (e *luaEffect) OnRemove(ctx *EffectCtx) {
 	if _, err := e.luaCtx.CallFunc("OnRemove", effectCtxToLua(ctx)); err != nil {
-		logLuaFuncCallError(err, ctx.Def.GetName()+".OnRemove")
+		logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnRemove")
 	}
 }
 
@@ -205,13 +204,13 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 	switch evt := evt.(type) {
 	case *event.Tick:
 		if _, err := e.luaCtx.CallFunc("OnTick", effectCtxToLua(ctx), map[string]any{"tick": evt.Tick}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+".OnTick")
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnTick")
 		}
 
 	case *event.CombatantUpdate:
 		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnCombatantUpdate")
 			break
 		}
 		if _, err := e.luaCtx.CallFunc("OnCombatantUpdate", effectCtxToLua(ctx), map[string]any{
@@ -219,65 +218,65 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			"active":    evt.Active,
 			"flags":     evt.Flags,
 		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+".OnCombatantUpdate")
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+".OnCombatantUpdate")
 		}
 
 	case *event.CombatantStatBase:
 		funcName := "OnCombatantStatBase"
 		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
-			"statDef":   statDefToLua(statDef),
+			"statDef":   statDefToLua(ctx.Ctx, statDef),
 			"value":     evt.Value,
 			"setValue": func(value int) {
 				evt.Value = value
 			},
 		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 		}
 
 	case *event.CombatantStatMod:
 		funcName := "OnCombatantStatMod"
 		combatant, err := ctx.Ctx.GetCombatantByID(evt.CombatantID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		statDef, err := ctx.Ctx.GetStatDefByID(evt.StatDefID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		if _, err := e.luaCtx.CallFunc(funcName, effectCtxToLua(ctx), map[string]any{
 			"combatant": combatantToLua(ctx.Ctx, combatant),
-			"statDef":   statDefToLua(statDef),
+			"statDef":   statDefToLua(ctx.Ctx, statDef),
 			"value":     evt.ModValue,
 			"setValue": func(value int) {
 				evt.ModValue = value
 			},
 		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 		}
 
 	case *event.CombatantEffect:
 		funcName := "OnCombatantEffect"
 		target, err := ctx.Ctx.GetCombatantByID(evt.TargetID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		effectDef, err := ctx.Ctx.GetEffectDefByID(evt.EffectDefID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		source, _ := ctx.Ctx.GetObject(evt.SourceID)
@@ -287,7 +286,7 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			"potency": evt.Potency,
 			"source":  objectToLua(ctx.Ctx, source),
 		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 		}
 
 	case *event.Trigger:
@@ -295,23 +294,23 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 
 		triggerDefObj, err := ctx.Ctx.GetObject(evt.TriggerDefID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		triggerDef, ok := triggerDefObj.(*TriggerDef)
 		if !ok {
-			logLuaFuncCallError(ErrUnexpectedObjectType, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, ErrUnexpectedObjectType, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 
 		effectDef, err := ctx.Ctx.GetEffectDefByID(evt.EffectDefID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		effectTarget, err := ctx.Ctx.GetCombatantByID(evt.EffectTargetID)
 		if err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 			break
 		}
 		effectSource, _ := ctx.Ctx.GetObject(evt.EffectSourceID)
@@ -323,15 +322,21 @@ func (e *luaEffect) OnEvent(ctx *EffectCtx, evt event.Event) {
 			"potency": evt.EffectPotency,
 			"source":  objectToLua(ctx.Ctx, effectSource),
 		}); err != nil {
-			logLuaFuncCallError(err, ctx.Def.GetName()+"."+funcName)
+			logLuaFuncCallError(ctx.Ctx.log, err, ctx.Def.GetName()+"."+funcName)
 		}
 
 	default:
-		log.Printf("WARNING: Effect %s received unknown event type: %T", ctx.Def.GetName(), evt.Type())
+		ctx.Ctx.log.Warn("Effect received unknown event type.", "effect", ctx.Def, "event", evt.Type())
 	}
 }
 
 func effectCtxToLua(effectCtx *EffectCtx) map[string]any {
+	if effectCtx == nil || effectCtx.Ctx == nil {
+		return map[string]any{
+			"type":  ObjectTypeError,
+			"error": ErrNilObject,
+		}
+	}
 	return map[string]any{
 		"target":      combatantToLua(effectCtx.Ctx, effectCtx.Target),
 		"source":      objectToLua(effectCtx.Ctx, effectCtx.Source),
@@ -344,9 +349,9 @@ func effectCtxToLua(effectCtx *EffectCtx) map[string]any {
 	}
 }
 
-func statDefToLua(statDef *StatDef) map[string]any {
+func statDefToLua(ctx *Context, statDef *StatDef) map[string]any {
 	if statDef == nil {
-		return errorToLua(ErrNilObject)
+		return errorToLua(ctx, ErrNilObject)
 	}
 	return map[string]any{
 		"type": statDef.GetType(),
@@ -357,8 +362,11 @@ func statDefToLua(statDef *StatDef) map[string]any {
 }
 
 func statToLua(ctx *Context, stat *Stat) map[string]any {
+	if stat == nil {
+		return errorToLua(ctx, ErrNilObject)
+	}
 	return map[string]any{
-		"def":     statDefToLua(stat.GetDef()),
+		"def":     statDefToLua(ctx, stat.GetDef()),
 		"getBase": stat.GetBase,
 		"setBase": func(value float64) {
 			stat.SetBase(int(value))
@@ -373,7 +381,7 @@ func statToLua(ctx *Context, stat *Stat) map[string]any {
 		"setMod": func(source any, value int) {
 			sourceObj, err := objectFromLua(ctx, source)
 			if err != nil {
-				logLuaFuncCallError(err, "stat.setMod")
+				logLuaFuncCallError(ctx.log, err, "stat.setMod")
 				return
 			}
 			stat.SetMod(sourceObj, value)
@@ -381,7 +389,7 @@ func statToLua(ctx *Context, stat *Stat) map[string]any {
 		"getCombatant": func() map[string]any {
 			combatant, err := ctx.GetCombatantWithStat(stat)
 			if err != nil {
-				return errorToLua(err)
+				return errorToLua(ctx, err)
 			}
 			return combatantToLua(ctx, combatant)
 		},

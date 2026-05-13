@@ -1,6 +1,7 @@
 package nbattle
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/chompy/nbattle_go/event"
@@ -19,6 +20,10 @@ type Combatant struct {
 	stats   []*Stat
 	effects []*CombatantEffect
 	flags   uint64
+}
+
+func (c *Combatant) String() string {
+	return fmt.Sprintf("<Combatant id=%d>", c.GetID())
 }
 
 func (c *Combatant) GetType() ObjectType {
@@ -53,6 +58,7 @@ func (c *Combatant) GetStat(statDefObj any) (*Stat, error) {
 	}
 	statDef, ok := statDefObj.(*StatDef)
 	if !ok {
+		c.ctx.log.Error("Unexpected stat def when retrieve combatant stat.", "combatant", c, "statDef", statDefObj)
 		return nil, ErrUnexpectedObjectType
 	}
 	if c.stats == nil {
@@ -83,6 +89,7 @@ func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) erro
 	}
 	effectDef, ok := effectDefObj.(*EffectDef)
 	if !ok {
+		c.ctx.log.Error("Unexpected effect def when setting combatant effect.", "target", c, "effectDef", effectDefObj)
 		return ErrUnexpectedObjectType
 	}
 
@@ -92,6 +99,8 @@ func (c *Combatant) SetEffect(effectDefObj any, potency int, sourceObj any) erro
 	if source != nil {
 		sourceID = source.GetID()
 	}
+
+	c.ctx.log.Debug("Set effect to combatant.", "target", c, "effectDef", effectDef, "potency", potency, "source", source)
 
 	// check if effect is already applied to the combatant
 	var combatantEffect *CombatantEffect
