@@ -2,7 +2,7 @@ function Name()
     return "attack"
 end
 
-function OnAdd(ctx)
-    ctx.target.getStat("hp").subBase(ctx.source.getStat("str").getValue() - ctx.target.getStat("def").getValue())
-    ctx.remove()
+function OnAdd(effectCtx)
+    effectCtx.target.getStat("hp").subBase(effectCtx.source.getStat("str").getValue() - effectCtx.target.getStat("def").getValue())
+    effectCtx.remove()
 end

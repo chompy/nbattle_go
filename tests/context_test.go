@@ -18,7 +18,7 @@ func TestHandleEvent(t *testing.T) {
 	srcCtx := initCtx()
 	recCtx := initCtx()
 
-	srcCtx.HookEvents(recCtx.HandleEvent)
+	srcCtx.HookEvents(recCtx.ProcessEvent)
 
 	cmbt := srcCtx.NewCombatant()
 	hpStat, err := cmbt.GetStat("hp")

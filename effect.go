@@ -28,43 +28,22 @@ func (d *EffectDef) GetName() string {
 }
 
 // EffectCtx is the context for an effect that has been applied to a specific combatant.
-type EffectCtx struct {
-	Ctx     *Context
+type EffectContext struct {
 	Def     *EffectDef
-	Potency int
 	Target  *Combatant
 	Source  Object
+	Potency int
 }
 
-func (e *EffectCtx) String() string {
-	return fmt.Sprintf("<EffectCtx def=%s target=%s potency=%d>", e.Def.String(), e.Target.String(), e.Potency)
-}
-
-// EmitTrigger emits a trigger event for the given trigger definition.
-func (e *EffectCtx) EmitTrigger(triggerDefObj any) error {
-	triggerDef, err := e.Ctx.GetTriggerDef(triggerDefObj)
-	if err != nil {
-		return err
-	}
-	sourceID := 0
-	if e.Source != nil {
-		sourceID = e.Source.GetID()
-	}
-	e.Ctx.EmitEvent(&event.Trigger{
-		TriggerDefID:   triggerDef.GetID(),
-		EffectDefID:    e.Def.GetID(),
-		EffectTargetID: e.Target.GetID(),
-		EffectSourceID: sourceID,
-		EffectPotency:  e.Potency,
-	})
-	return nil
+func (e *EffectContext) String() string {
+	return fmt.Sprintf("<EffectCtx def=%s target=%s source=%s potency=%d>", e.Def.String(), e.Target.String(), e.Source.String(), e.Potency)
 }
 
 // Effect is an interface for effects.
 type Effect interface {
-	OnAdd(ctx *EffectCtx)                      // OnAdd is called when the effect is first applied to a combatant.
-	OnRemove(ctx *EffectCtx)                   // OnRemove is called when the effect is removed from a combatant.
-	OnEvent(ctx *EffectCtx, event event.Event) // OnEvent is called whenever an outside event is emitted.
+	OnAdd(ctx *Context, effect *EffectContext)                      // OnAdd is called when the effect is first applied to a combatant.
+	OnRemove(ctx *Context, effect *EffectContext)                   // OnRemove is called when the effect is removed from a combatant.
+	OnEvent(ctx *Context, effect *EffectContext, event event.Event) // OnEvent is called whenever an outside event is emitted.
 }
 
 func (c *Context) addEffectToStack(effect Effect) {
@@ -77,4 +56,14 @@ func (c *Context) removeEffectFromStack(effect Effect) {
 
 func (c *Context) isEffectInStack(effect Effect) bool {
 	return slices.Contains(c.effectStack, effect)
+}
+
+func getCombatantEffectContext(target *Combatant, source Object, combatantEffect *combatantEffect) *EffectContext {
+	potency := combatantEffect.sources[source.GetID()]
+	return &EffectContext{
+		Def:     combatantEffect.def,
+		Potency: potency,
+		Target:  target,
+		Source:  source,
+	}
 }

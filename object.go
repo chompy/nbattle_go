@@ -1,5 +1,7 @@
 package nbattle
 
+import "fmt"
+
 type ObjectType int
 
 const (
@@ -10,6 +12,25 @@ const (
 	ObjectTypeUnknown
 	ObjectTypeError
 )
+
+func (o ObjectType) String() string {
+	switch o {
+	case ObjectTypeStatDef:
+		return "stat_def"
+	case ObjectTypeEffectDef:
+		return "effect_def"
+	case ObjectTypeTriggerDef:
+		return "trigger_def"
+	case ObjectTypeCombatant:
+		return "combatant"
+	case ObjectTypeUnknown:
+		return "unknown"
+	case ObjectTypeError:
+		return "error"
+	default:
+		return fmt.Sprintf("unknown %d", o)
+	}
+}
 
 // Object is an interface for all objects managed by NBattle.
 type Object interface {

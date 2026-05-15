@@ -2,9 +2,11 @@ package tests
 
 import (
 	"embed"
+	"log"
 	"testing"
 
 	nbattle "github.com/chompy/nbattle_go"
+	"github.com/chompy/nbattle_go/event"
 )
 
 //go:embed effects/*.lua
@@ -30,7 +32,7 @@ func TestPoisonEffect(t *testing.T) {
 	hp.SetBase(50)
 
 	attacker := ctx.NewCombatant()
-	target.SetEffect(effectDef, 1, attacker)
+	target.SetEffect(effectDef, attacker, 1)
 
 	hp, _ = target.GetStat(hpStatDef)
 	if hp.GetValue() != 50 {
@@ -78,7 +80,7 @@ func TestRegenerateEffect(t *testing.T) {
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(10)
 
-	target.SetEffect(effectDef, 1, nil)
+	target.SetEffect(effectDef, target, 1)
 
 	ctx.Tick()
 
@@ -133,8 +135,8 @@ func TestPoisonAndRegenerateInteraction(t *testing.T) {
 	hp.SetBase(100)
 
 	attacker := ctx.NewCombatant()
-	target.SetEffect(poisonDef, 1, attacker)
-	target.SetEffect(regenDef, 1, target)
+	target.SetEffect(poisonDef, attacker, 1)
+	target.SetEffect(regenDef, target, 1)
 
 	ctx.Tick()
 
@@ -150,7 +152,7 @@ func TestPoisonAndRegenerateInteraction(t *testing.T) {
 		t.Fatalf("expected hp to be 102 after 2 ticks, got %d", hp.GetValue())
 	}
 
-	target.SetEffect(poisonDef, 0, nil)
+	target.SetEffect(poisonDef, attacker, 0)
 
 	ctx.Tick()
 
@@ -176,7 +178,7 @@ func TestShieldEffect(t *testing.T) {
 	}
 
 	target := ctx.NewCombatant()
-	target.SetEffect(effectDef, 1, nil)
+	target.SetEffect(effectDef, target, 1)
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(10)
 
@@ -225,7 +227,7 @@ func TestCounterEffect(t *testing.T) {
 	attHp, _ := attacker.GetStat(hpStatDef)
 	attHp.SetBase(30)
 
-	target.SetEffect(effectDef, 1, attacker)
+	target.SetEffect(effectDef, attacker, 1)
 
 	targetHp, _ := target.GetStat(hpStatDef)
 	targetHp.SetBase(25)
@@ -260,7 +262,7 @@ func TestSelfHealEffect(t *testing.T) {
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(20)
 
-	target.SetEffect(effectDef, 1, nil)
+	target.SetEffect(effectDef, target, 1)
 
 	hp, _ = target.GetStat(hpStatDef)
 	hp.SetBase(15)
@@ -321,7 +323,7 @@ func TestTriggerEffect(t *testing.T) {
 	str.SetBase(5)
 
 	attacker := ctx.NewCombatant()
-	target.SetEffect(triggerDef, 1, attacker)
+	target.SetEffect(triggerDef, attacker, 1)
 
 	hp, _ = target.GetStat(hpStatDef)
 	hp.SetBase(0)
@@ -360,7 +362,7 @@ func TestCopyStatEffect(t *testing.T) {
 	tgtStr, _ := target.GetStat(strStatDef)
 	tgtStr.SetBase(3)
 
-	target.SetEffect(effectDef, 1, source)
+	target.SetEffect(effectDef, source, 1)
 
 	tgtStr, _ = target.GetStat(strStatDef)
 	if tgtStr.GetValue() != 12 {
@@ -396,7 +398,7 @@ func TestReflectEffect(t *testing.T) {
 	attHp, _ := attacker.GetStat(hpStatDef)
 	attHp.SetBase(30)
 
-	target.SetEffect(effectDef, 1, attacker)
+	target.SetEffect(effectDef, attacker, 1)
 
 	tgtHp, _ = target.GetStat(hpStatDef)
 	tgtHp.SetBase(20)
@@ -439,8 +441,8 @@ func TestMultipleCombatantsWithEffects(t *testing.T) {
 	hp3, _ := cmbt3.GetStat(hpStatDef)
 	hp3.SetBase(60)
 
-	cmbt1.SetEffect(poisonDef, 1, cmbt2)
-	cmbt2.SetEffect(poisonDef, 1, cmbt3)
+	cmbt1.SetEffect(poisonDef, cmbt2, 1)
+	cmbt2.SetEffect(poisonDef, cmbt3, 1)
 
 	ctx.Tick()
 
@@ -495,7 +497,7 @@ func TestNewCombatantEvent(t *testing.T) {
 	srcStr.SetBase(15)
 
 	target := ctx.NewCombatant()
-	target.SetEffect(effectDef, 1, source)
+	target.SetEffect(effectDef, source, 1)
 
 	tgtStr, _ := target.GetStat(strStatDef)
 	if tgtStr.GetValue() != 15 {
@@ -522,16 +524,9 @@ func TestEffectOnNilSource(t *testing.T) {
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(10)
 
-	err = target.SetEffect(effectDef, 1, nil)
-	if err != nil {
-		t.Fatal("expected no error when adding effect with nil source")
-	}
-
-	ctx.Tick()
-
-	hp, _ = target.GetStat(hpStatDef)
-	if hp.GetValue() != 13 {
-		t.Fatalf("expected hp to be 13, got %d", hp.GetValue())
+	err = target.SetEffect(effectDef, nil, 1)
+	if err == nil {
+		t.Fatal("expected error when adding effect with nil source")
 	}
 }
 
@@ -554,7 +549,7 @@ func TestEffectRemoval(t *testing.T) {
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(10)
 
-	target.SetEffect(effectDef, 1, nil)
+	target.SetEffect(effectDef, target, 1)
 
 	ctx.Tick()
 
@@ -563,7 +558,7 @@ func TestEffectRemoval(t *testing.T) {
 		t.Fatalf("expected hp to be 13 after regen, got %d", hp.GetValue())
 	}
 
-	target.SetEffect(effectDef, 0, nil)
+	target.SetEffect(effectDef, target, 0)
 
 	ctx.Tick()
 
@@ -611,9 +606,9 @@ func TestMultipleEffectsSameCombatant(t *testing.T) {
 	}
 
 	target := ctx.NewCombatant()
-	target.SetEffect(shieldDef, 1, nil)
-	target.SetEffect(poisonDef, 1, nil)
-	target.SetEffect(regenDef, 1, nil)
+	target.SetEffect(shieldDef, target, 1)
+	target.SetEffect(poisonDef, target, 1)
+	target.SetEffect(regenDef, target, 1)
 	hp, _ := target.GetStat(hpStatDef)
 	hp.SetBase(10)
 
@@ -653,7 +648,7 @@ func TestEffectWithNoEventResponse(t *testing.T) {
 	tgtStr, _ := target.GetStat(strStatDef)
 	tgtStr.SetBase(3)
 
-	target.SetEffect(effectDef, 1, source)
+	target.SetEffect(effectDef, source, 1)
 
 	ctx.Tick()
 
@@ -694,7 +689,7 @@ func TestDefendEffectWithReducedDamage(t *testing.T) {
 	attHp, _ := attacker.GetStat(hpStatDef)
 	attHp.SetBase(30)
 
-	target.SetEffect(effectDef, 1, attacker)
+	target.SetEffect(effectDef, attacker, 1)
 
 	tgtHp, _ = target.GetStat(hpStatDef)
 	tgtHp.SetBase(20)
@@ -703,4 +698,56 @@ func TestDefendEffectWithReducedDamage(t *testing.T) {
 	if tgtHp.GetValue() != 25 {
 		t.Fatalf("expected target hp to be 25 (took only half the damage: 30->25 instead of 30->20), got %d", tgtHp.GetValue())
 	}
+}
+
+func TestMultipleAttacks(t *testing.T) {
+
+	ctx := nbattle.New()
+
+	func() {
+		attackF, err := luaEffectFS.Open("effects/attack.lua")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer attackF.Close()
+		ctx.NewLuaEffect(attackF)
+		ctx.NewStatDef("hp", 0, 200)
+		ctx.NewStatDef("str", 0, 200)
+		ctx.NewStatDef("def", 0, 200)
+	}()
+
+	target := ctx.NewCombatant()
+	tgtHp, _ := target.GetStat("hp")
+	tgtHp.SetBase(30)
+	tgtDef, _ := target.GetStat("def")
+	tgtDef.SetBase(1)
+
+	source := ctx.NewCombatant()
+	srcHp, _ := source.GetStat("hp")
+	srcHp.SetBase(30)
+	srcStr, _ := source.GetStat("str")
+	srcStr.SetBase(2)
+
+	evtHook := func(evt event.Event) error {
+		switch evt := evt.(type) {
+		case *event.CombatantEffect:
+			effectDef, _ := ctx.GetEffectDef(evt.EffectDefID)
+			log.Println(effectDef, evt.Potency)
+		}
+		return nil
+	}
+	ctx.HookEvents(evtHook)
+
+	for tgtHp.GetValue() > 0 {
+		if err := target.SetEffect("attack", source, 1); err != nil {
+			t.Fatal(err)
+			return
+		}
+		ctx.Tick()
+	}
+
+	if tgtHp.GetValue() > 0 {
+		t.Fatalf("expected target hp to be 22")
+	}
+
 }

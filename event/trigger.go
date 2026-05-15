@@ -1,11 +1,8 @@
 package event
 
 type Trigger struct {
-	TriggerDefID   int
-	EffectDefID    int
-	EffectTargetID int
-	EffectSourceID int
-	EffectPotency  int
+	TriggerDefID int
+	SourceID     int
 }
 
 func (e *Trigger) Type() Type {
@@ -13,7 +10,7 @@ func (e *Trigger) Type() Type {
 }
 
 func (e *Trigger) Serialize() ([]byte, error) {
-	return serialize(TriggerEvent, e.TriggerDefID, e.EffectDefID, e.EffectTargetID, e.EffectSourceID, e.EffectPotency)
+	return serialize(TriggerEvent, e.TriggerDefID, e.SourceID)
 }
 
 func (e *Trigger) Deserialize(data []byte) error {
@@ -29,26 +26,12 @@ func (e *Trigger) Deserialize(data []byte) error {
 	if err != nil {
 		return err
 	}
-	effectDefID, err := d.ReadInt()
+	sourceID, err := d.ReadInt()
 	if err != nil {
 		return err
 	}
-	effectTargetID, err := d.ReadInt()
-	if err != nil {
-		return err
-	}
-	effectSourceID, err := d.ReadInt()
-	if err != nil {
-		return err
-	}
-	effectPotency, err := d.ReadInt()
-	if err != nil {
-		return err
-	}
+
 	e.TriggerDefID = triggerDefID
-	e.EffectDefID = effectDefID
-	e.EffectTargetID = effectTargetID
-	e.EffectSourceID = effectSourceID
-	e.EffectPotency = effectPotency
+	e.SourceID = sourceID
 	return nil
 }

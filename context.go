@@ -194,7 +194,7 @@ func (c *Context) GetTriggerDef(obj any) (*TriggerDef, error) {
 
 // NewCombatant creates a new combatant.
 func (c *Context) NewCombatant() *Combatant {
-	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
+	combatant := &Combatant{c.newObject(), false, make([]*Stat, 0), make([]*combatantEffect, 0), 0}
 	c.objects = append(c.objects, combatant)
 	combatant.SetActive(true)
 	c.log.Debug("New combatant created.", "object", combatant)
@@ -204,7 +204,7 @@ func (c *Context) NewCombatant() *Combatant {
 func (c *Context) newCombatantWithID(ID int) *Combatant {
 	combatant, err := c.GetCombatant(ID)
 	if err == ErrObjectNotFound {
-		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*CombatantEffect, 0), 0}
+		combatant := &Combatant{BaseObject{ID, c}, false, make([]*Stat, 0), make([]*combatantEffect, 0), 0}
 		c.objects = append(c.objects, combatant)
 		c.log.Debug("New combatant created.", "object", combatant)
 		return combatant
@@ -268,11 +268,6 @@ func (c *Context) GetFlagByName(name string) uint64 {
 
 // Tick advances the tick counter and emit tick event.
 func (c *Context) Tick() int {
-	// clean up effects that have been removed
-	for _, combatant := range c.GetCombatants() {
-		combatant.processEffectRemovals()
-	}
-
 	// emit tick event
 	c.tick++
 	c.log.Debug("Next tick.", "tick", c.tick)
@@ -288,17 +283,33 @@ func (c *Context) GetTick() int {
 // EmitEvent sends an event to all hooks and active combatant effects.
 func (c *Context) EmitEvent(event event.Event) error {
 	c.log.Debug("Emit event.", "event", event.Type())
+	for _, combatant := range c.GetCombatants() {
+		if err := combatant.processEvent(event); err != nil {
+			return err
+		}
+	}
 	for _, hook := range c.eventHooks {
 		if err := hook(event); err != nil {
 			return err
 		}
 	}
-	for _, combatant := range c.GetCombatants() {
-		if err := combatant.HandleEffectEvent(event); err != nil {
-			return err
-		}
-	}
 	return nil
+}
+
+// EmitTrigger emits a trigger event from the given source.
+func (c *Context) EmitTrigger(triggerDefObj any, sourceObj any) error {
+	triggerDef, err := c.GetTriggerDef(triggerDefObj)
+	if err != nil {
+		return err
+	}
+	source, err := c.GetObject(sourceObj)
+	if err != nil {
+		return err
+	}
+	return c.EmitEvent(&event.Trigger{
+		TriggerDefID: triggerDef.GetID(),
+		SourceID:     source.GetID(),
+	})
 }
 
 // HookEvents adds a new event hook.
@@ -306,9 +317,9 @@ func (c *Context) HookEvents(hook event.Hook) {
 	c.eventHooks = append(c.eventHooks, hook)
 }
 
-// HandleEvent processes an event from another context.
-func (c *Context) HandleEvent(evt event.Event) error {
-	c.log.Debug("Handle event.", "event", evt.Type())
+// ProcessEvent processes an event from another context.
+func (c *Context) ProcessEvent(evt event.Event) error {
+	c.log.Debug("Process event.", "event", evt.Type())
 	switch evt := evt.(type) {
 	case *event.Tick:
 		for c.GetTick() < evt.Tick {
@@ -357,7 +368,7 @@ func (c *Context) HandleEvent(evt event.Event) error {
 			return err
 		}
 		target.SetEffect(evt.EffectDefID, evt.Potency, evt.SourceID)
-
 	}
+
 	return nil
 }

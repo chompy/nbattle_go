@@ -64,11 +64,8 @@ func TestTriggerDefGetByName(t *testing.T) {
 
 func TestTriggerEventSerialization(t *testing.T) {
 	evt := &event.Trigger{
-		TriggerDefID:   5,
-		EffectDefID:    3,
-		EffectTargetID: 10,
-		EffectSourceID: 7,
-		EffectPotency:  2,
+		TriggerDefID: 5,
+		SourceID:     7,
 	}
 
 	data, err := evt.Serialize()
@@ -89,17 +86,8 @@ func TestTriggerEventSerialization(t *testing.T) {
 	if deserialized.TriggerDefID != 5 {
 		t.Errorf("expected TriggerDefID 5, got %d", deserialized.TriggerDefID)
 	}
-	if deserialized.EffectDefID != 3 {
-		t.Errorf("expected EffectDefID 3, got %d", deserialized.EffectDefID)
-	}
-	if deserialized.EffectTargetID != 10 {
-		t.Errorf("expected EffectTargetID 10, got %d", deserialized.EffectTargetID)
-	}
-	if deserialized.EffectSourceID != 7 {
-		t.Errorf("expected EffectSourceID 7, got %d", deserialized.EffectSourceID)
-	}
-	if deserialized.EffectPotency != 2 {
-		t.Errorf("expected EffectPotency 2, got %d", deserialized.EffectPotency)
+	if deserialized.SourceID != 7 {
+		t.Errorf("expected SourceID 7, got %d", deserialized.SourceID)
 	}
 }
 
@@ -122,13 +110,13 @@ type TriggerCaptureEffect struct {
 	CapturedEvents []*event.Trigger
 }
 
-func (e *TriggerCaptureEffect) OnAdd(ctx *nbattle.EffectCtx) {
+func (e *TriggerCaptureEffect) OnAdd(ctx *nbattle.Context, effectCtx *nbattle.EffectContext) {
 }
 
-func (e *TriggerCaptureEffect) OnRemove(ctx *nbattle.EffectCtx) {
+func (e *TriggerCaptureEffect) OnRemove(ctx *nbattle.Context, effectCtx *nbattle.EffectContext) {
 }
 
-func (e *TriggerCaptureEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
+func (e *TriggerCaptureEffect) OnEvent(ctx *nbattle.Context, effectCtx *nbattle.EffectContext, evt event.Event) {
 	if triggerEvt, ok := evt.(*event.Trigger); ok {
 		e.CapturedEvents = append(e.CapturedEvents, triggerEvt)
 	}
@@ -144,7 +132,7 @@ func TestTriggerEmitViaEffectCtx(t *testing.T) {
 	})
 
 	target := ctx.NewCombatant()
-	target.SetEffect(captureEffectDef, 1, nil)
+	target.SetEffect(captureEffectDef, target, 1)
 
 	source := ctx.NewCombatant()
 
@@ -153,7 +141,7 @@ func TestTriggerEmitViaEffectCtx(t *testing.T) {
 		return emitEffect
 	})
 
-	source.SetEffect(emitEffectDef, 1, nil)
+	source.SetEffect(emitEffectDef, source, 1)
 
 	if len(captureEffect.CapturedEvents) != 1 {
 		t.Fatalf("expected 1 captured trigger event, got %d", len(captureEffect.CapturedEvents))
@@ -163,14 +151,8 @@ func TestTriggerEmitViaEffectCtx(t *testing.T) {
 	if evt.TriggerDefID != triggerDef.GetID() {
 		t.Errorf("expected TriggerDefID %d, got %d", triggerDef.GetID(), evt.TriggerDefID)
 	}
-	if evt.EffectDefID != emitEffectDef.GetID() {
-		t.Errorf("expected EffectDefID %d, got %d", emitEffectDef.GetID(), evt.EffectDefID)
-	}
-	if evt.EffectTargetID != source.GetID() {
-		t.Errorf("expected EffectTargetID %d, got %d", source.GetID(), evt.EffectTargetID)
-	}
-	if evt.EffectPotency != 1 {
-		t.Errorf("expected EffectPotency 1, got %d", evt.EffectPotency)
+	if evt.SourceID != source.GetID() {
+		t.Errorf("expected SourceID %d, got %d", source.GetID(), evt.SourceID)
 	}
 }
 
@@ -178,14 +160,14 @@ type EmitTriggerEffect struct {
 	TriggerDef *nbattle.TriggerDef
 }
 
-func (e *EmitTriggerEffect) OnAdd(ctx *nbattle.EffectCtx) {
-	ctx.EmitTrigger(e.TriggerDef)
+func (e *EmitTriggerEffect) OnAdd(ctx *nbattle.Context, effectCtx *nbattle.EffectContext) {
+	ctx.EmitTrigger(e.TriggerDef, effectCtx.Target)
 }
 
-func (e *EmitTriggerEffect) OnRemove(ctx *nbattle.EffectCtx) {
+func (e *EmitTriggerEffect) OnRemove(ctx *nbattle.Context, effectCtx *nbattle.EffectContext) {
 }
 
-func (e *EmitTriggerEffect) OnEvent(ctx *nbattle.EffectCtx, evt event.Event) {
+func (e *EmitTriggerEffect) OnEvent(ctx *nbattle.Context, effectCtx *nbattle.EffectContext, evt event.Event) {
 }
 
 func TestTriggerEmitViaTriggerDef(t *testing.T) {
@@ -198,19 +180,10 @@ func TestTriggerEmitViaTriggerDef(t *testing.T) {
 	})
 
 	target := ctx.NewCombatant()
-	target.SetEffect(captureEffectDef, 1, nil)
+	target.SetEffect(captureEffectDef, target, 1)
 
 	source := ctx.NewCombatant()
-
-	effectCtx := &nbattle.EffectCtx{
-		Ctx:     ctx,
-		Def:     ctx.NewEffectDef("dummy", func() nbattle.Effect { return &EmitTriggerEffect{} }),
-		Potency: 3,
-		Target:  source,
-		Source:  target,
-	}
-
-	triggerDef.EmitEvent(effectCtx)
+	ctx.EmitTrigger(triggerDef, source)
 
 	if len(captureEffect.CapturedEvents) != 1 {
 		t.Fatalf("expected 1 captured trigger event, got %d", len(captureEffect.CapturedEvents))
@@ -220,43 +193,8 @@ func TestTriggerEmitViaTriggerDef(t *testing.T) {
 	if evt.TriggerDefID != triggerDef.GetID() {
 		t.Errorf("expected TriggerDefID %d, got %d", triggerDef.GetID(), evt.TriggerDefID)
 	}
-	if evt.EffectPotency != 3 {
-		t.Errorf("expected EffectPotency 3, got %d", evt.EffectPotency)
-	}
-	if evt.EffectSourceID != target.GetID() {
-		t.Errorf("expected EffectSourceID %d, got %d", target.GetID(), evt.EffectSourceID)
-	}
-}
-
-func TestTriggerWithNilSource(t *testing.T) {
-	ctx := nbattle.New()
-	triggerDef := ctx.NewTriggerDef("test_trigger")
-
-	captureEffect := &TriggerCaptureEffect{}
-	captureEffectDef := ctx.NewEffectDef("capture", func() nbattle.Effect {
-		return captureEffect
-	})
-
-	target := ctx.NewCombatant()
-	target.SetEffect(captureEffectDef, 1, nil)
-
-	effectCtx := &nbattle.EffectCtx{
-		Ctx:     ctx,
-		Def:     ctx.NewEffectDef("dummy", func() nbattle.Effect { return &EmitTriggerEffect{} }),
-		Potency: 1,
-		Target:  target,
-		Source:  nil,
-	}
-
-	triggerDef.EmitEvent(effectCtx)
-
-	if len(captureEffect.CapturedEvents) != 1 {
-		t.Fatalf("expected 1 captured trigger event, got %d", len(captureEffect.CapturedEvents))
-	}
-
-	evt := captureEffect.CapturedEvents[0]
-	if evt.EffectSourceID != 0 {
-		t.Errorf("expected EffectSourceID 0 for nil source, got %d", evt.EffectSourceID)
+	if evt.SourceID != source.GetID() {
+		t.Errorf("expected SourceID %d, got %d", source.GetID(), evt.SourceID)
 	}
 }
 
@@ -273,22 +211,14 @@ func TestTriggerMultipleEffects(t *testing.T) {
 	target := ctx.NewCombatant()
 	cap1Def, _ := ctx.GetEffectDef("capture1")
 	cap2Def, _ := ctx.GetEffectDef("capture2")
-	target.SetEffect(cap1Def, 1, nil)
-	target.SetEffect(cap2Def, 1, nil)
+	target.SetEffect(cap1Def, target, 1)
+	target.SetEffect(cap2Def, target, 1)
 
 	source := ctx.NewCombatant()
 	sourceHp, _ := source.GetStat(ctx.NewStatDef("hp", 0, 99))
 	sourceHp.SetBase(50)
 
-	effectCtx := &nbattle.EffectCtx{
-		Ctx:     ctx,
-		Def:     ctx.NewEffectDef("dummy", func() nbattle.Effect { return &EmitTriggerEffect{} }),
-		Potency: 5,
-		Target:  source,
-		Source:  target,
-	}
-
-	triggerDef.EmitEvent(effectCtx)
+	ctx.EmitTrigger(triggerDef, source)
 
 	if len(capture1.CapturedEvents) != 1 {
 		t.Errorf("expected capture1 to have 1 event, got %d", len(capture1.CapturedEvents))
@@ -300,15 +230,7 @@ func TestTriggerMultipleEffects(t *testing.T) {
 
 func TestTriggerEmitTriggerOnNotFound(t *testing.T) {
 	ctx := nbattle.New()
-	effectCtx := &nbattle.EffectCtx{
-		Ctx:     ctx,
-		Def:     ctx.NewEffectDef("dummy", func() nbattle.Effect { return &EmitTriggerEffect{} }),
-		Potency: 1,
-		Target:  ctx.NewCombatant(),
-		Source:  nil,
-	}
-
-	err := effectCtx.EmitTrigger(999)
+	err := ctx.EmitTrigger(999, 998)
 	if err != nbattle.ErrObjectNotFound {
 		t.Errorf("expected ErrObjectNotFound, got %v", err)
 	}
